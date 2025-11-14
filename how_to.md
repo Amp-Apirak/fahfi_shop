@@ -1584,5 +1584,333 @@ app.put('/api/sales/:id', authenticateToken, async (req, res) => {
 
 เรายืนยันว่า (ถ้าสำเร็จ) สต็อก (products) จะถูก "ปรับปรุง" (เพิ่ม/ลด) อย่างถูกต้องตามผลต่างของบิลเก่าและบิลใหม่
 
+---
+# ภาค 2: การพัฒนา Frontend (Nuxt.js)
+---
+
+## 🚀 ขั้นตอนที่ 19: (โมดูล Frontend) เริ่มต้นโปรเจกต์ Nuxt.js
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้เปลี่ยนมาทำงานที่ Frontend โดยได้ดำเนินการดังนี้:
+1.  **สร้างโปรเจกต์:** ใช้คำสั่ง `npx nuxi@latest init frontend` เพื่อสร้างโปรเจกต์ Nuxt.js 4 ในโฟลเดอร์ `D:\12. Dev\fahfi_shop\frontend`
+2.  **เปิดโปรเจกต์:** เปิดโฟลเดอร์ `frontend` ในหน้าต่าง VS Code ใหม่
+3.  **ติดตั้ง Dependencies:** รันคำสั่ง `npm install bootstrap axios` เพื่อติดตั้งเครื่องมือที่จำเป็น
+4.  **ตั้งค่า Bootstrap:** เพิ่ม `css: ["bootstrap/dist/css/bootstrap.min.css"]` ลงในไฟล์ `nuxt.config.ts`
+5.  **รัน Server:** รัน `npm run dev` ใน Terminal ของ `frontend`
+6.  **ผลลัพธ์:** ยืนยันว่าสามารถเปิด `http://localhost:3000/` และเห็นหน้า "Welcome to Nuxt!"
+
+*(สถานะปัจจุบัน: เรามี Server 2 ตัวรันพร้อมกัน คือ Backend ที่ `localhost:3001` และ Frontend ที่ `localhost:3000`)*
+
+
+
+---
+# ภาค 2: การพัฒนา Frontend (Nuxt.js)
+---
+
+## 🚀 ขั้นตอนที่ 20: (Frontend) สร้างหน้า Login และ หน้าแรก
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้สร้างหน้าเว็บแรก (Pages) สำหรับ Nuxt.js และทดสอบการเชื่อมต่อ API Login (`/api/login`) จาก Frontend สำเร็จแล้ว
+
+1.  **สร้างโฟลเดอร์ `pages`:** ในโปรเจกต์ `frontend`
+2.  **แก้ไข `app.vue`:** ลบของเดิมทั้งหมดและแทนที่ด้วย `<NuxtPage />` เพื่อให้ Nuxt แสดงผลหน้าต่างๆ
+3.  **สร้าง `pages/login.vue`:**
+    * ใช้ Bootstrap (card, form, button) สร้าง UI
+    * ใช้ `v-model` รับค่า `username` และ `password`
+    * ใช้ `axios.post('http://localhost:3001/api/login', ...)` ในฟังก์ชัน `handleLogin`
+    * ถ้าสำเร็จ: (ชั่วคราว) เก็บ `token` และ `user` ลงใน `localStorage` และใช้ `router.push('/')` (เปลี่ยนหน้าไปหน้าแรก)
+    * ถ้าล้มเหลว: แสดง `errorMessage`
+4.  **สร้าง `pages/index.vue`:**
+    * สร้างหน้าแรก (Home) พร้อมปุ่ม Logout
+    * ปุ่ม Logout จะลบ `token` ออกจาก `localStorage` และ `router.push('/login')` (กลับไปหน้า Login)
+
+### ผลลัพธ์
+* เราสามารถเปิด `http://localhost:3000/login` และเห็นฟอร์ม (ตามภาพ `image_35f809.png`)
+* เมื่อ Login ถูกต้อง (Backend ตอบรับ) หน้าเว็บจะพาไปที่ `/`
+* เมื่อกด Logout จะกลับมาที่ `/login`
+
+
+## 🚀 ขั้นตอนที่ 21: (Frontend) สร้าง "ด่านตรวจ" (Middleware) และระบบ Layouts
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้สร้างระบบ Auth ฝั่ง Frontend ที่สมบูรณ์แล้ว โดยใช้ Middleware และ Layouts ของ Nuxt
+
+1.  **อัปเดตการเก็บข้อมูล:**
+    * เราเปลี่ยนจากการใช้ `localStorage` เป็น `useCookie('token')` และ `useCookie('user')` ในหน้า `login.vue` และ `index.vue` (หน้า Logout) เพื่อให้ Server (SSR) และ Client (Browser) เห็นข้อมูลเดียวกัน
+
+2.  **สร้าง Middleware (ด่านตรวจ):**
+    * สร้างไฟล์ `middleware/auth.global.ts`
+    * โค้ดนี้จะ "ทำงานทุกครั้ง" ที่เปลี่ยนหน้า
+    * **Logic:** * ถ้า (ยังไม่ Login) AND (พยายามเข้าหน้าที่ไม่ใช่ `/login`) > เตะกลับไป `/login`
+        * ถ้า (Login แล้ว) AND (พยายามเข้าหน้า `/login`) > เตะกลับไปหน้าแรก (`/`)
+
+3.  **สร้างระบบ Layouts (Navbar):**
+    * อัปเดต `app.vue` ให้ใช้ `<NuxtLayout><NuxtPage /></NuxtLayout>`
+    * สร้าง `layouts/default.vue` เพื่อเป็น "Navbar หลัก"
+    * Navbar นี้ใช้ `v-if="isLoggedIn"` (ตรวจสอบจาก `useCookie('token')`) เพื่อแสดงผลเฉพาะเมื่อ Login แล้ว
+    * แสดงชื่อผู้ใช้ (`userName`) จาก Cookie
+    * หน้า `login.vue` ตั้งค่า `definePageMeta({ layout: false })` เพื่อ "ซ่อน" Navbar
+    * หน้า `index.vue` (และหน้าอื่นๆ) จะใช้ `default` layout อัตโนมัติ (แสดง Navbar)
+
+4.  **แก้ไขการ Redirect (สำคัญ):**
+    * ใน `login.vue` เราเปลี่ยนจากการใช้ `MapsTo('/')` เป็น `window.location.href = '/'`
+    * นี่เป็นการบังคับ "Full Page Reload" ซึ่งช่วยแก้ปัญหา State และทำให้ Middleware/Layout ทำงานทันทีหลัง Login
+
+## 🚀 ขั้นตอนที่ 22: (Frontend) สร้างหน้า "จัดการสินค้า" (Products Page - Read)
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้สร้างหน้า `/products` ( `pages/products.vue` ) เพื่อ "อ่าน" (Read) ข้อมูลสินค้าจาก Backend API (`GET /api/products`)
+
+1.  **สร้าง `pages/products.vue`:**
+    * เราตั้งค่า `layout: 'default'` เพื่อให้มี Navbar
+    * (แก้ไข) เรา `import axios from 'axios';` ที่ด้านบนสุดของ `<script setup>` เพื่อแก้ไขข้อผิดพลาด `axios is not defined`
+    * เราใช้ `useCookie('token')` เพื่อดึง Token ที่เก็บไว้
+
+2.  **การดึงข้อมูล (Fetching):**
+    * เราสร้างฟังก์ชัน `fetchProducts` ที่ทำงานแบบ `async`
+    * (สำคัญ) เรายิง `axios.get` ไปยัง `http://localhost:3001/api/products`
+    * (สำคัญ) เราแนบ "ตั๋ว" (Token) ไปใน Header:
+      ```javascript
+      headers: {
+        'Authorization': `Bearer ${token.value}`
+      }
+      ```
+    * เราใช้ `onMounted(() => { fetchProducts() });` เพื่อสั่งให้ฟังก์ชันนี้ทำงานทันทีที่เปิดหน้า
+
+3.  **การแสดงผล (UI):**
+    * เราใช้ `v-if="pending"` เพื่อแสดง "Loading..."
+    * เราใช้ `v-if="error"` เพื่อแสดงข้อผิดพลาด
+    * เราใช้ `v-if="products"` และ `v-for` เพื่อวนลูปข้อมูลสินค้าทั้งหมดแสดงในตาราง (Bootstrap Table)
+
+4.  **อัปเดต `index.vue`:**
+    * เราเปลี่ยนปุ่ม "จัดการสินค้า" จาก `<a>` เป็น `<NuxtLink to="/products">` เพื่อให้ลิงก์ไปที่หน้าสินค้าได้
+
+### ผลลัพธ์
+* เมื่อเข้า `http://localhost:3000/products` หน้าเว็บจะแสดงตารางสินค้าที่ดึงมาจากฐานข้อมูล (Backend) ได้สำเร็จ
+
+
+## 🚀 ขั้นตอนที่ 23: (Frontend) สร้าง Modal "เพิ่ม/แก้ไข" สินค้า (C/U)
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้อัปเดตหน้า `products.vue` ให้รองรับการ "สร้าง" (Create) และ "อัปเดต" (Update) สินค้า โดยใช้ Modal (กล่องเด้ง) ของ Bootstrap
+
+1.  **ตั้งค่า Bootstrap JS:**
+    * เราแก้ไข `nuxt.config.ts` และสร้าง `plugins/bootstrap.client.js` เพื่อให้ Nuxt โหลด JS ของ Bootstrap (จำเป็นสำหรับ Modal)
+    * (สำคัญ) เราได้ทำการ "Hard Restart" Server Frontend ( `npm run dev` ) เพื่อให้ `nuxt.config.ts` ใหม่ทำงาน
+
+2.  **แก้ไข `products.vue` (ป้องกัน SSR Error):**
+    * เรา **ลบ** `import { Modal } from 'bootstrap'` ที่ด้านบน (ซึ่งเคยทำให้ Server Crash)
+    * เราย้ายตรรกะการสร้าง Modal ไปไว้ใน `onMounted` (ซึ่งรันเฉพาะใน Browser)
+    * เราใช้โค้ดที่ปลอดภัย: `bsModal = new window.bootstrap.Modal(modalElement);` เพื่อเรียกใช้ Modal ที่โหลดมาจาก Plugin
+
+3.  **จัดการลำดับฟังก์ชัน:**
+    * เราย้าย `const fetchProducts = ...` ขึ้นไป "ก่อน" `onMounted` เพื่อแก้ไขปัญหา `function not defined` ที่ทำให้หน้าค้าง (Spinner)
+
+4.  **ตรรกะ (Logic) ของ Modal:**
+    * **State:** สร้าง `modalMode` ( 'add'/'edit' ) และ `currentProduct` (ข้อมูลในฟอร์ม)
+    * **`openAddModal()`:** ถูกเรียกโดยปุ่ม "เพิ่มสินค้าใหม่" > รีเซ็ต `currentProduct` ให้ว่าง
+    * **`openEditModal(product)`:** ถูกเรียกโดยปุ่ม "แก้ไข" > คัดลอกข้อมูล `product` ( `...product` ) มาใส่ `currentProduct`
+    * **`handleSubmit()`:** ถูกเรียกโดยปุ่ม "บันทึก" (Submit) ใน Modal
+        * ตรวจสอบ `modalMode`: ถ้าเป็น 'add' > ยิง `axios.post`
+        * ถ้าเป็น 'edit' > ยิง `axios.put` (ไปยัง `/api/products/:id`)
+        * (สำคัญ) ทั้งสองเคส ต้องแนบ `Bearer Token` ใน Header
+        * ถ้าสำเร็จ: สั่ง `bsModal.hide()` (ปิด Modal) และ `fetchProducts()` (รีเฟรชตาราง)
+
+## 🚀 ขั้นตอนที่ 24: (Frontend) สร้างฟังก์ชัน "ลบสินค้า" (Delete)
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้ทำส่วนสุดท้ายของ CRUD สินค้า คือการ "ลบ" (Delete)
+
+1.  **แก้ไข `products.vue` (Template):**
+    * เราได้เพิ่ม `@click="handleDelete(product.id, product.name)"` ให้กับปุ่ม "ลบ" (btn-danger)
+
+2.  **แก้ไข `products.vue` (Script):**
+    * เราได้เพิ่มฟังก์ชัน `handleDelete(productId, productName)`
+    * **Logic:**
+        1.  ใช้ `window.confirm()` เพื่อถามยืนยันก่อน
+        2.  ถ้าผู้ใช้ยืนยัน, จะยิง `axios.delete` ไปยัง `/api/products/:id` (Backend ขั้นตอนที่ 10)
+        3.  แนบ `Bearer Token` ใน Header `Authorization`
+        4.  ถ้าลบสำเร็จ (`try`): เรียก `fetchProducts()` เพื่อรีเฟรชตาราง
+        5.  ถ้าลบไม่สำเร็จ (`catch`): (เช่น สินค้ามีประวัติการขาย) จะแสดง `window.alert()` พร้อมข้อความ Error จาก Backend
+
+### ผลลัพธ์ (โมดูล 1)
+* ตอนนี้เรามีระบบ CRUD (Create, Read, Update, Delete) ที่สมบูรณ์แบบสำหรับ "การจัดการสินค้า" (ข้อกำหนด 1) ทั้งฝั่ง Backend และ Frontend
+
+## 🚀 ขั้นตอนที่ 25: (โมดูล 2) สร้างหน้า "จัดการรายจ่าย" (Expenses Page)
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้สร้างหน้า CRUD ที่สมบูรณ์สำหรับ "การจัดการรายจ่าย" (ข้อกำหนด 2) โดยคัดลอกโครงสร้าง (ตาราง + Modal) มาจาก `products.vue`
+
+1.  **สร้าง `pages/expenses.vue`:**
+    * สร้างไฟล์ UI และ Logic ทั้งหมดสำหรับ CRUD (Create, Read, Update, Delete) ของรายจ่าย
+    * `fetchExpenses`: เรียก `GET /api/expenses`
+    * `handleSubmit`: เรียก `POST /api/expenses` (Add) หรือ `PUT /api/expenses/:id` (Edit)
+    * `handleDelete`: เรียก `DELETE /api/expenses/:id`
+    * (สำคัญ) เราใช้ `formatDateForInput` เพื่อจัดการ `<input type="date">` ให้ถูกต้อง
+
+2.  **แก้ไข `layouts/default.vue` (Navbar):**
+    * เราได้เพิ่ม `<NuxtLink to="/expenses">` เพื่อสร้างเมนู
+    * **(แก้ไข Bug)** เราต้องเพิ่มคลาส `text-white me-3` ให้กับ `<NuxtLink>` เพื่อให้มองเห็นตัวหนังสือบน Navbar สีดำ
+
+
+    ## 🚀 ขั้นตอนที่ 25: (โมดูล 2) สร้างหน้า "จัดการรายจ่าย" (Expenses Page)
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้สร้างหน้า CRUD ที่สมบูรณ์สำหรับ "การจัดการรายจ่าย" (ข้อกำหนด 2) โดยคัดลอกโครงสร้าง (ตาราง + Modal) มาจาก `products.vue`
+
+1.  **สร้าง `pages/expenses.vue`:**
+    * สร้างไฟล์ UI และ Logic ทั้งหมดสำหรับ CRUD (Create, Read, Update, Delete) ของรายจ่าย
+    * `fetchExpenses`: เรียก `GET /api/expenses`
+    * `handleSubmit`: เรียก `POST /api/expenses` (Add) หรือ `PUT /api/expenses/:id` (Edit)
+    * `handleDelete`: เรียก `DELETE /api/expenses/:id`
+    * (สำคัญ) เราใช้ `formatDateForInput` เพื่อจัดการ `<input type="date">` ให้ถูกต้อง
+
+2.  **แก้ไข `layouts/default.vue` (Navbar):**
+    * เราได้เพิ่ม `<NuxtLink to="/expenses" class="nav-link text-white me-3">` เพื่อสร้างเมนู
+    * **(แก้ไข Bug)** เราได้เพิ่มคลาส `text-white me-3` เพื่อให้มองเห็นตัวหนังสือบน Navbar สีดำ
+
+### ผลลัพธ์ (โมดูล 2)
+* ตอนนี้เรามีระบบ CRUD ที่สมบูรณ์แบบสำหรับ "การจัดการรายจ่าย" (ข้อกำหนด 2) ทั้งฝั่ง Backend และ Frontend
+
+## 🚀 ขั้นตอนที่ 26: (โมดูล 3) สร้างหน้า "การขาย" (Point of Sale - POS)
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้สร้างหน้า `pages/pos.vue` (ข้อกำหนด 3) ซึ่งเป็นส่วนที่ซับซ้อนที่สุดของ Frontend
+
+1.  **อัปเดต Navbar:**
+    * เราได้เพิ่ม `<NuxtLink to="/pos" ...>` ใน `layouts/default.vue` เพื่อเป็นเมนูหลัก (หน้าขาย)
+
+2.  **สร้าง `pages/pos.vue`:**
+    * **UI (3 ส่วน):**
+        1.  **รายการสินค้า (ซ้าย):** `fetchProducts()` ( `GET /api/products` ) มาแสดง, มี `@click="addToCart(product)"`
+        2.  **ตะกร้า (ขวา):** ใช้ `v-for` แสดง `cart.value` (State หลัก)
+        3.  **(สำคัญ) ส่วนลด:** มี `<input v-model="item.discount_amount">` (ตามข้อกำหนด 3)
+    * **Logic (State Management):**
+        1.  `cart = ref([])`: State สำหรับเก็บตะกร้า
+        2.  `addToCart(product)`: เพิ่มสินค้าลง `cart` (หรือเพิ่ม `quantity`)
+        3.  `removeFromCart(index)`: ลบสินค้าออกจาก `cart`
+        4.  `updateQuantity(item)`: ตรวจสอบสต็อกคงเหลือ
+        5.  `totalAmount = computed(...)`: (สำคัญ) คำนวณยอดสุทธิ ( `(price * qty) - discount` ) อัตโนมัติ ทุกครั้งที่ `cart` เปลี่ยน
+    * **Logic (Submit):**
+        1.  `submitSale()`: ฟังก์ชันที่ถูกเรียกโดยปุ่ม "ยืนยันการขาย"
+        2.  **เตรียมข้อมูล:** สร้าง `saleData` ( `cart` และ `totalAmount` )
+        3.  **ยิง API:** เรียก `axios.post('http://localhost:3001/api/sales', saleData, ...)` (Backend ขั้นตอนที่ 15)
+        4.  **ถ้าสำเร็จ:** `alert` (แจ้งเตือน), `cart.value = []` (ล้างตะกร้า), และ `fetchProducts()` (รีเฟรชสต็อกสินค้าฝั่งซ้าย)
+        5.  **ถ้าล้มเหลว:** (เช่น สต็อกไม่พอ) `saleError.value` จะแสดง Error จาก Backend
+
+### ผลลัพธ์ (โมดูล 3)
+* เรามีหน้า POS ที่สมบูรณ์ สามารถเลือกสินค้า, ใส่ส่วนลดต่อชิ้น, คำนวณยอดอัตโนมัติ และยืนยันการขาย (ซึ่งจะไปตัดสต็อกใน Backend) ได้สำเร็จ
+
+
+## 🚀 ขั้นตอนที่ 27: (โมดูล 4) สร้างหน้า "ประวัติการขาย" (Sales History - Read)
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้สร้างหน้า `pages/sales-history.vue` (ข้อกำหนด 4) เพื่อ "อ่าน" (Read) บิลย้อนหลังทั้งหมด
+
+1.  **อัปเดต Navbar:**
+    * เราได้เพิ่ม `<NuxtLink to="/sales-history" ...>` ใน `layouts/default.vue` เพื่อเป็นเมนู
+
+2.  **สร้าง `pages/sales-history.vue`:**
+    * `fetchSalesHistory`: เรียก `GET /api/sales` (Backend ขั้นตอนที่ 16)
+    * **UI:** แสดงผล "หัวบิล" (ID, วันที่, ยอดรวม, ผู้ขาย) ลงในตาราง
+    * **(แก้ไข Bug):** เราได้แก้ไข Typo `v="if="sales""` เป็น `v-if="sales"` ทำให้ตารางแสดงผลได้อย่างถูกต้อง
+    * (ปุ่ม "ดูรายละเอียด", "แก้ไข", "ยกเลิก" ยังไม่ทำงาน)
+
+
+    ## 🚀 ขั้นตอนที่ 28: (Frontend) สร้าง "Modal ดูรายละเอียดบิล"
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้ทำให้ปุ่ม "ดูรายละเอียด" (สีฟ้า) ในหน้า `sales-history.vue` ทำงานได้สำเร็จ (ข้อกำหนด 4)
+
+1.  **แก้ไข `sales-history.vue` (Template):**
+    * เราได้เพิ่มโค้ด HTML สำหรับ Modal (`#saleDetailModal`)
+    * เราได้ผูกปุ่ม "ดูรายละเอียด" กับ `data-bs-toggle="modal"` และ `@click="openDetailsModal(sale.id)"`
+    * (เราได้ `disabled` ปุ่ม "แก้ไข" และ "ยกเลิก" ไว้ชั่วคราว)
+
+2.  **แก้ไข `sales-history.vue` (Script):**
+    * เราได้เพิ่ม State สำหรับ Modal: `modalPending`, `modalError`, `selectedSale`
+    * เราได้สร้างฟังก์ชัน `openDetailsModal(saleId)`
+    * **Logic:**
+        1.  เมื่อถูกเรียก, จะตั้งค่า `modalPending = true` (แสดง Spinner ใน Modal)
+        2.  ยิง `axios.get` ไปยัง `/api/sales/:id` (Backend ขั้นตอนที่ 16) พร้อม `Bearer Token`
+        3.  นำผลลัพธ์ (`{ saleHeader, saleDetails }`) มาเก็บใน `selectedSale.value`
+        4.  Modal จะแสดงรายละเอียด "ไส้ในบิล" (รายการสินค้า, ราคา, ส่วนลด)
+
+### ผลลัพธ์
+* ผู้ใช้สามารถคลิก "ดูรายละเอียด" เพื่อตรวจสอบ "ไส้ใน" ของบิลย้อนหลังได้
+
+
+## 🚀 ขั้นตอนที่ 29: (Frontend) สร้างฟังก์ชัน "ยกเลิกบิล (คืนสต็อก)"
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้ทำให้ปุ่ม "ยกเลิกบิล" (สีแดง) ในหน้า `sales-history.vue` ทำงานได้สำเร็จ (ข้อกำหนด 5.2)
+
+1.  **แก้ไข `sales-history.vue` (Template):**
+    * เราได้ "เปิดใช้งาน" ปุ่ม "ยกเลิกบิล" (ลบ `disabled`)
+    * เราได้ผูก `@click="handleDeleteSale(sale.id)"`
+
+2.  **แก้ไข `sales-history.vue` (Script):**
+    * เราได้เพิ่มฟังก์ชัน `handleDeleteSale(saleId)`
+    * **Logic:**
+        1.  ใช้ `window.confirm()` ถามยืนยัน (พร้อมแจ้งว่า "จะคืนสต็อก")
+        2.  ยิง `axios.delete` ไปยัง `/api/sales/:id` (Backend ขั้นตอนที่ 17) พร้อม `Bearer Token`
+        3.  ถ้าสำเร็จ (`try`): `alert` ข้อความจาก Backend ( "ยกเลิกบิล...สำเร็จ!" ) และเรียก `fetchSalesHistory()` เพื่อรีเฟรชตาราง (บิลจะหายไป)
+        4.  ถ้าล้มเหลว (`catch`): `window.alert` แสดง Error
+
+### ผลลัพธ์ (ข้อกำหนด 5.2)
+* เรามีระบบ "ยกเลิกบิล" ที่สมบูรณ์ ซึ่งจะเรียก Backend ให้ **"คืนสต็อก"** สินค้าโดยอัตโนมัติ
+
+## 🚀 ขั้นตอนที่ 30: (Frontend) สร้าง "Modal แก้ไขบิล (ปรับปรุงสต็อก)"
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้ทำส่วนที่ซับซ้อนที่สุดของ Frontend (ข้อกำหนด 5.3) คือการ "แก้ไขบิล" ย้อนหลัง
+
+1.  **แก้ไข `sales-history.vue` (Template):**
+    * เราได้ "เปิดใช้งาน" ปุ่ม "แก้ไขบิล" (สีเหลือง)
+    * เราได้ผูก `@click="openEditModal(sale.id)"` และ `data-bs-toggle="modal"`
+    * เราได้เพิ่ม `(Modal 2) #editSaleModal` ซึ่งเป็น UI ที่ซับซ้อน (คล้ายหน้า POS) มี 2 ส่วน (รายการสินค้าให้เลือก / ตะกร้าที่กำลังแก้ไข)
+
+2.  **แก้ไข `sales-history.vue` (Script):**
+    * เราได้เพิ่ม State สำหรับ Modal 2: `editModalPending`, `editModalError`, `editSaleId`, `allProducts`, `editCart`
+    * **`openEditModal(saleId)`:**
+        1.  ยิง `GET /api/products` (ดึงสินค้าทั้งหมด)
+        2.  ยิง `GET /api/sales/:id` (ดึงบิลเก่า)
+        3.  "แมพ" ข้อมูลบิลเก่า มาใส่ใน `editCart` (ตะกร้าที่กำลังแก้ไข)
+    * **`editTotalAmount = computed(...)`:** คำนวณยอดรวมใหม่ของ `editCart` อัตโนมัติ
+    * **`submitEditSale()`:**
+        1.  เตรียม `saleData` ( `{ newCart, newTotalAmount }` )
+        2.  ยิง `axios.put` ไปยัง `/api/sales/:id` (Backend ขั้นตอนที่ 18) พร้อม `Bearer Token`
+        3.  ถ้าสำเร็จ (`try`): `alert` (แจ้งเตือน), ปิด Modal (`bsModal.hide()`), และเรียก `fetchSalesHistory()` (รีเฟรชตาราง)
+        4.  ถ้าล้มเหลว (`catch`): (เช่น สต็อกไม่พอ) `editModalError` จะแสดง Error จาก Backend
+
+### ผลลัพธ์ (ข้อกำหนด 5.3)
+* เรามีระบบ "แก้ไขบิล" ที่สมบูรณ์ ซึ่งจะเรียก Backend ให้ **"ปรับปรุงสต็อก"** (คืนของเก่า + ตัดของใหม่) โดยอัตโนมัติ
+
+---
+*(สิ้นสุดการพัฒนา Frontend ทั้งหมดตามข้อกำหนด 0-5)*
+---
+
+---
+# ภาค 3: การรายงานผล (Reporting)
+---
+
+## 🚀 ขั้นตอนที่ 31: (โมดูล 6) สร้าง API สำหรับ "Dashboard"
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้กลับไปที่ **Backend** ( `backend/index.js` ) เพื่อสร้าง API สำหรับ "แดชบอร์ดและรายงาน" (ข้อกำหนด 6)
+
+1.  **สร้าง API `GET /api/dashboard/summary`:**
+    * เราได้เพิ่ม API endpoint ใหม่ที่ `authenticateToken`
+    * API นี้ใช้ SQL `SUM()`, `COUNT()`, `CURDATE()` (เพื่อดึงข้อมูล "วันนี้") และ `WHERE stock_quantity < 10`
+
+2.  **ตรรกะ (Logic) ของ API:**
+    * ดึง `totalSales` (ยอดขายรวมวันนี้)
+    * ดึง `totalExpenses` (ยอดรายจ่ายรวมวันนี้)
+    * ดึง `totalOrders` (จำนวนบิลวันนี้)
+    * ดึง `lowStockProducts` (สินค้าที่สต็อกต่ำกว่า 10)
+    * ส่งข้อมูลทั้งหมดนี้กลับไปเป็น JSON object เดียว
+
+### ผลลัพธ์
+* เรามี API (`/api/dashboard/summary`) ที่พร้อมส่งข้อมูลสรุปผลไปให้ Frontend
 
 

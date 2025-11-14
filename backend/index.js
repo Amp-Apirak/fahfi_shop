@@ -1023,7 +1023,56 @@ app.put('/api/sales/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// --------------------------------------- 9. Dashboard Routes (Reporting) ---------------------------------------------------------
 
+// @route   GET /api/dashboard/summary
+// @desc    ดึงข้อมูลสรุปสำหรับ Dashboard
+// @access  Private
+
+app.get('/api/dashboard/summary', authenticateToken, async (req, res) => {
+    // (เราสามารถจำกัดสิทธิ์ Admin ได้ที่นี่ ถ้าต้องการ)
+    // if (req.user.role !== 'Admin') {
+    //     return res.status(403).json({ message: 'คุณไม่มีสิทธิ์ดูรายงานสรุป' });
+    // }
+
+    try {
+        // (ใช้ CURDATE() ของ MySQL เพื่อเอา "เฉพาะวันนี้")
+
+        // 1. ยอดขายรวม (วันนี้)
+        const [salesToday] = await db.promise().query(
+            "SELECT SUM(total_amount) AS totalSales FROM sales WHERE DATE(sale_date) = CURDATE()"
+        );
+
+        // 2. ยอดรายจ่ายรวม (วันนี้)
+        const [expensesToday] = await db.promise().query(
+            "SELECT SUM(amount) AS totalExpenses FROM expenses WHERE DATE(expense_date) = CURDATE()"
+        );
+
+        // 3. จำนวนบิล (วันนี้)
+        const [ordersToday] = await db.promise().query(
+            "SELECT COUNT(id) AS totalOrders FROM sales WHERE DATE(sale_date) = CURDATE()"
+        );
+
+        // 4. สินค้าที่ใกล้หมด (สต็อก < 10)
+        const [lowStockProducts] = await db.promise().query(
+            "SELECT id, name, stock_quantity FROM products WHERE stock_quantity < 10 ORDER BY stock_quantity ASC"
+        );
+
+        // 5. ประกอบร่างส่งกลับไป
+        const summary = {
+            totalSales: salesToday[0].totalSales || 0,
+            totalExpenses: expensesToday[0].totalExpenses || 0,
+            totalOrders: ordersToday[0].totalOrders || 0,
+            lowStockProducts: lowStockProducts 
+        };
+
+        res.status(200).json(summary);
+
+    } catch (error) {
+        console.error('❌ Error getting dashboard summary:', error.message);
+        res.status(500).json({ message: 'เกิดข้อผิดพลาดที่ Server' });
+    }
+});
 
 // Start the Server
 app.listen(port, () => {
