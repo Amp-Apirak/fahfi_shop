@@ -246,8 +246,8 @@
 </template>
 
 <script setup>
-import axios from "axios";
 import { ref, onMounted, computed } from "vue";
+import axios from "axios";
 
 // 1. การตั้งค่า Layout
 definePageMeta({
@@ -258,7 +258,7 @@ definePageMeta({
 const sales = ref(null);
 const pending = ref(true);
 const error = ref(null);
-const token = useCookie("token");
+const token = ref(null);
 
 // 3. (Modal 1) "ดูรายละเอียด"
 const modalPending = ref(false);
@@ -289,6 +289,15 @@ const fetchSalesHistory = async () => {
 
 // 6. Lifecycle Hook (ดึงข้อมูลตารางหลัก)
 onMounted(() => {
+  // Get token from cookie on client side
+  if (process.client) {
+    const tokenCookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('token='));
+    if (tokenCookie) {
+      token.value = tokenCookie.split('=')[1];
+    }
+  }
   fetchSalesHistory();
 });
 
@@ -325,7 +334,9 @@ const handleDeleteSale = async (saleId) => {
   try {
     const response = await axios.delete(
       `http://localhost:3001/api/sales/${saleId}`,
-      { headers: { Authorization: `Bearer ${token.value}` } }
+      {
+        headers: { Authorization: `Bearer ${token.value}` }
+      }
     );
     alert(response.data.message); // "ยกเลิกบิล...สำเร็จ!"
     await fetchSalesHistory(); // รีเฟรชตาราง
@@ -386,9 +397,7 @@ const openEditModal = async (saleId) => {
       };
     });
   } catch (err) {
-    editModalError.value = err.response
-      ? err.response.data.message
-      : err.message;
+    editModalError.value = err.response ? err.response.data.message : err.message;
   } finally {
     editModalPending.value = false;
   }

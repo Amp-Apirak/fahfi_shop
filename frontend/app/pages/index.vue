@@ -100,9 +100,20 @@
 <script setup>
 import axios from 'axios';
 
+// (ใหม่!) ด่านตรวจ "เฉพาะหน้า" นี้
 definePageMeta({
-  layout: 'default'
+  layout: 'default',
+  middleware: defineNuxtRouteMiddleware(() => {
+    const { isAdmin } = useAuth();
+    if (!isAdmin.value) {
+      // ถ้า "ไม่ใช่" Admin, เตะไปหน้า POS
+      return navigateTo('/pos');
+    }
+    // ถ้าเป็น Admin ก็ปล่อยผ่าน
+  })
 });
+
+
 
 const summary = ref(null);
 const pending = ref(true);

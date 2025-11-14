@@ -1914,3 +1914,108 @@ app.put('/api/sales/:id', authenticateToken, async (req, res) => {
 * เรามี API (`/api/dashboard/summary`) ที่พร้อมส่งข้อมูลสรุปผลไปให้ Frontend
 
 
+---
+# ภาค 4: การจำกัดสิทธิ์ (Authorization)
+---
+
+## 🚀 ขั้นตอนที่ 33: (Authorization) สร้าง `useAuth` Composable
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้ "ปรับโครงสร้าง" (Refactor) ตรรกะการยืนยันตัวตน (Auth Logic) ทั้งหมด เพื่อหยุดการเรียก `useCookie` ซ้ำซ้อน และรวมศูนย์การจัดการ (ตามวิธีของ Nuxt)
+
+1.  **สร้าง `composables/useAuth.ts`:**
+    * ไฟล์นี้ใช้ `useState('user', ...)` เพื่อ "แชร์" สถานะผู้ใช้ (State) ทั่วทั้งแอป
+    * ส่งออก (Export) "ค่า" (Computed) ที่จำเป็น:
+        * `isLoggedIn` (Login หรือยัง)
+        * `isAdmin` (เป็น Admin หรือไม่)
+        * `userName` (ชื่อผู้ใช้)
+    * ส่งออก (Export) "ฟังก์ชัน" (Actions):
+        * `login(token, user)`: (สำหรับตั้ง Cookie และ State)
+        * `logout()`: (สำหรับล้าง Cookie และ State)
+        * `syncUserState()`: (สำหรับดึงข้อมูลจาก Cookie ตอนโหลดแอป)
+
+2.  **แก้ไข `app.vue`:**
+    * เราเรียก `syncUserState()` 1 ครั้งตอนแอปโหลด เพื่อดึงข้อมูลจาก Cookie มาใส่ใน State
+
+3.  **แก้ไข `login.vue`:**
+    * เปลี่ยนจากการจัดการ Cookie เอง ( `useCookie('token').value = ...` ) มาเป็นการเรียกใช้ฟังก์ชัน `login(token, user)` จาก `useAuth` แทน
+
+
+    ## 🚀 ขั้นตอนที่ 34: (Authorization) อัปเดตไฟล์หลัก (`config` และ `app`)
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้ทำการอัปเดตไฟล์หลัก 2 ไฟล์เพื่อให้ระบบ `useAuth` และ `Bootstrap JS` ทำงานได้อย่างสมบูรณ์
+
+1.  **แก้ไข `nuxt.config.ts`:**
+    * เราได้ "เพิ่ม" `plugins: [{ src: '~/plugins/bootstrap.client.js', mode: 'client' }]` กลับเข้าไป
+    * **ผลกระทบ:** นี่เป็นการ "เปิดใช้งาน" JavaScript ของ Bootstrap ทำให้ Modal (กล่องเด้ง) ทั้งหมดในระบบ (Products, Expenses, Sales History) กลับมาทำงานได้
+
+2.  **แก้ไข `app.vue`:**
+    * เราได้ "เพิ่ม" โค้ด `const { syncUserState } = useAuth(); syncUserState();`
+    * **ผลกระทบ:** นี่คือการ "ปลุก" `useAuth` ให้ดึงข้อมูลผู้ใช้จาก Cookie มาใส่ใน State ทุกครั้งที่เว็บโหลด (Refresh) ทำให้สถานะ `isAdmin` และ `userName` ถูกต้องเสมอ
+
+3.  **(สำคัญ) การรีสตาร์ท:**
+    * เราได้ทำการ "Hard Restart" Server Frontend ( `Ctrl + C` แล้ว `npm run dev` ) เพื่อให้การเปลี่ยนแปลง (โดยเฉพาะ `nuxt.config.ts` และ `composables`) มีผล
+
+
+## 🚀 ขั้นตอนที่ 35: (Authorization) จำกัดสิทธิ์หน้า Dashboard
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้ทำขั้นตอนสุดท้ายในการจำกัดสิทธิ์ (Authorization) เพื่อป้องกันไม่ให้ `Staff` (พนักงาน) เข้าถึงหน้า Dashboard ( `/` )
+
+1.  **แก้ไข `pages/index.vue`:**
+    * เราได้ "เพิ่ม" `definePageMeta` เข้าไปใน `<script setup>`
+    * เราได้สร้าง "Middleware เฉพาะหน้า" (Route-level Middleware)
+    * **Logic:**
+        1.  เรียก `useAuth()` เพื่อเช็ค `isAdmin`
+        2.  ถ้าผู้ใช้ `!isAdmin.value` (ไม่ใช่ Admin)
+        3.  สั่ง `return navigateTo('/pos')` (เตะ/Redirect ไปหน้า POS)
+        4.  ถ้าเป็น Admin, ก็ปล่อยผ่าน (เข้าหน้า Dashboard ได้)
+
+### ผลลัพธ์ (Authorization)
+* ระบบจำกัดสิทธิ์ของเราสมบูรณ์แล้ว:
+    * **Admin:** เห็นทุกเมนู เข้าได้ทุกหน้า (รวมถึง Dashboard สรุปผล)
+    * **Staff:** เห็นเฉพาะเมนู (POS, สินค้า) และถ้าพยายามพิมพ์ URL เข้าหน้า Dashboard ( `/` ) หรือหน้า Admin อื่นๆ จะถูก "เตะ" กลับไปหน้า POS อัตโนมัติ
+
+---
+*(สิ้นสุดการพัฒนาโปรเจกต์ทั้งหมดตามข้อกำหนด)*
+---
+
+
+---
+# ภาค 5: การอัปโหลดไฟล์
+---
+
+## 🚀 ขั้นตอนที่ 36: (Backend) สร้าง API สำหรับ "อัปโหลดไฟล์"
+*(สถานะ: ดำเนินการเสร็จสิ้น)*
+
+เราได้เพิ่มความสามารถในการอัปโหลดรูปภาพ (สำหรับสินค้า/ใบเสร็จ) ให้กับ Backend
+
+1.  **ติดตั้งเครื่องมือ:**
+    * `npm install multer`
+
+2.  **สร้างโฟลเดอร์:**
+    * สร้าง `backend/public/uploads` เพื่อใช้เก็บไฟล์ที่อัปโหลด
+
+3.  **แก้ไข `backend/index.js`:**
+    * **Import:** `path` และ `multer`
+    * **Static Directory:** สั่ง `app.use(express.static('public'))` เพื่อให้ Frontend เข้าถึงไฟล์ที่อัปโหลดได้
+    * **ตั้งค่า Multer:**
+        * `storage`: ตั้งค่า `destination` (ที่เก็บ) และ `filename` (ตั้งชื่อไฟล์ใหม่ด้วย `Date.now()`)
+        * `fileFilter`: กรองให้รับเฉพาะ `image/jpeg`, `image/png`
+        * `upload`: สร้าง `multer` instance จาก `storage` และ `fileFilter`
+    * **(สำคัญ) แก้ไข `express.json()`:**
+        * **ลบ** `app.use(express.json())` (Global) ที่ขัดแย้งกับ `multer`
+        * **เพิ่ม** `express.json()` (Local) เข้าไปใน Route `POST`/`PUT` ทั้งหมด (8 จุด) ที่รับ JSON (เช่น `/api/login`, `/api/products`, `/api/sales`)
+        * **ยกเว้น** `/api/upload` ที่ห้ามมี `express.json()`
+    * **สร้าง API `POST /api/upload`:**
+        * ใช้ `authenticateToken` และ `upload.single('image')`
+        * ถ้าสำเร็จ: ตอบกลับเป็น JSON `{ message: '...', imageUrl: 'http://localhost:3001/uploads/...' }`
+
+### ผลลัพธ์
+* เราทดสอบ `POST /api/upload` (แบบ `form-data`) ผ่าน Thunder Client และได้รับ `imageUrl` ตอบกลับมาถูกต้อง
+
+
+
+
+
