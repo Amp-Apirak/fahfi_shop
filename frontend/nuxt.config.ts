@@ -2,8 +2,11 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
-  
-  css: ["bootstrap/dist/css/bootstrap.min.css"],
+
+  css: [
+    "bootstrap/dist/css/bootstrap.min.css",
+    "@fortawesome/fontawesome-free/css/all.min.css"  // Font Awesome Icons
+  ],
 
   vite: {
     define: {
