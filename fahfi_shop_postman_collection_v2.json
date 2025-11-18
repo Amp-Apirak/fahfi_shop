@@ -1,0 +1,565 @@
+{
+  "info": {
+    "_postman_id": "fahfi-shop-api-collection-v2",
+    "name": "fahfi_shop API Collection v2 (with User Management)",
+    "description": "การทดสอบ API ระบบจัดการร้านเสื้อผ้า (fahfi_shop) - รุ่นที่ 2 พร้อม User Management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "1. Register - ลงทะเบียนผู้ใช้ใหม่",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser1\",\n  \"password\": \"password123\",\n  \"role\": \"Staff\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "register"]
+            },
+            "description": "ลงทะเบียนผู้ใช้ใหม่ในระบบ"
+          },
+          "response": []
+        },
+        {
+          "name": "2. Login - เข้าสู่ระบบ ⭐ สำคัญ",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"token\", jsonData.token);",
+                  "    pm.test(\"Token saved to environment\", function() {",
+                  "        pm.expect(jsonData).to.have.property('token');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser1\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "login"]
+            },
+            "description": "เข้าสู่ระบบและได้ Token JWT"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👥 User Management",
+      "item": [
+        {
+          "name": "3. Get All Users - ดึงผู้ใช้ทั้งหมด",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"]
+            },
+            "description": "ดึงข้อมูลผู้ใช้ทั้งหมด (ยกเว้น password)"
+          },
+          "response": []
+        },
+        {
+          "name": "4. Get User by ID - ดึงผู้ใช้รายบุคคล",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "1"]
+            },
+            "description": "ดึงข้อมูลผู้ใช้รายบุคคล (เปลี่ยน ID ตามต้องการ)"
+          },
+          "response": []
+        },
+        {
+          "name": "5. Update User - แก้ไขผู้ใช้",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser1_updated\",\n  \"role\": \"Admin\",\n  \"password\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "1"]
+            },
+            "description": "แก้ไขข้อมูลผู้ใช้ (username, role, password - optional)"
+          },
+          "response": []
+        },
+        {
+          "name": "6. Delete User - ลบผู้ใช้",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/2",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "2"]
+            },
+            "description": "ลบผู้ใช้ (ไม่สามารถลบตัวเองได้)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📦 Product Management",
+      "item": [
+        {
+          "name": "7. Create Product - เพิ่มสินค้าใหม่",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"เสื้อยืดคอกลม สีขาว\",\n  \"category\": \"เสื้อยืด\",\n  \"grade\": \"A\",\n  \"details\": \"เสื้อยืดคุณภาพดี 100% cotton\",\n  \"cost_price\": 50.00,\n  \"sell_price\": 150.00,\n  \"stock_quantity\": 20,\n  \"product_image_url\": \"http://localhost:3001/uploads/shirt1.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"]
+            },
+            "description": "เพิ่มสินค้าใหม่ลงในระบบ"
+          },
+          "response": []
+        },
+        {
+          "name": "8. Get All Products - ดึงสินค้าทั้งหมด",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"]
+            },
+            "description": "ดึงข้อมูลสินค้าทั้งหมดจากระบบ"
+          },
+          "response": []
+        },
+        {
+          "name": "9. Get Product by ID - ดึงสินค้า 1 ชิ้น",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "1"]
+            },
+            "description": "ดึงข้อมูลสินค้าชิ้นเดียว (เปลี่ยน ID ตามต้องการ)"
+          },
+          "response": []
+        },
+        {
+          "name": "10. Update Product - แก้ไขสินค้า",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"เสื้อยืดคอกลม สีดำ (แก้ไข)\",\n  \"category\": \"เสื้อยืด\",\n  \"grade\": \"A+\",\n  \"details\": \"เสื้อยืดคุณภาพดีเยี่ยม 100% cotton\",\n  \"cost_price\": 55.00,\n  \"sell_price\": 160.00,\n  \"stock_quantity\": 18\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "1"]
+            },
+            "description": "แก้ไขข้อมูลสินค้า (เปลี่ยน ID ตามต้องการ)"
+          },
+          "response": []
+        },
+        {
+          "name": "11. Delete Product - ลบสินค้า",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "1"]
+            },
+            "description": "ลบสินค้า (เปลี่ยน ID ตามต้องการ)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "💰 Expense Management",
+      "item": [
+        {
+          "name": "12. Create Expense - บันทึกรายจ่าย",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expense_date\": \"2025-11-13\",\n  \"category\": \"ค่าเช่า\",\n  \"details\": \"ค่าเช่าร้านประจำเดือนพฤศจิกายน\",\n  \"amount\": 15000.00,\n  \"receipt_image_url\": \"http://localhost:3001/uploads/receipt1.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "expenses"]
+            },
+            "description": "บันทึกรายจ่ายใหม่"
+          },
+          "response": []
+        },
+        {
+          "name": "13. Get All Expenses - ดึงรายจ่ายทั้งหมด",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "expenses"]
+            },
+            "description": "ดึงข้อมูลรายจ่ายทั้งหมด"
+          },
+          "response": []
+        },
+        {
+          "name": "14. Update Expense - แก้ไขรายจ่าย",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expense_date\": \"2025-11-13\",\n  \"category\": \"ค่าเช่า\",\n  \"details\": \"ค่าเช่าร้านประจำเดือนพฤศจิกายน (แก้ไข)\",\n  \"amount\": 15500.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "expenses", "1"]
+            },
+            "description": "แก้ไขข้อมูลรายจ่าย (เปลี่ยน ID ตามต้องการ)"
+          },
+          "response": []
+        },
+        {
+          "name": "15. Delete Expense - ลบรายจ่าย",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/expenses/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "expenses", "1"]
+            },
+            "description": "ลบรายจ่าย (เปลี่ยน ID ตามต้องการ)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🛒 Sales Management (POS)",
+      "item": [
+        {
+          "name": "16. Create Sale - บันทึกการขาย ⭐ สำคัญ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cart\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 2,\n      \"discount_amount\": 0\n    },\n    {\n      \"product_id\": 2,\n      \"quantity\": 1,\n      \"discount_amount\": 50.00\n    }\n  ],\n  \"totalAmount\": 410.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sales",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sales"]
+            },
+            "description": "บันทึกการขาย (ระบบจะตัดสต็อกอัตโนมัติ)"
+          },
+          "response": []
+        },
+        {
+          "name": "17. Get All Sales - ดึงประวัติการขาย",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sales",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sales"]
+            },
+            "description": "ดึงข้อมูลประวัติการขายทั้งหมด"
+          },
+          "response": []
+        },
+        {
+          "name": "18. Get Sale Details - ดึงบิล 1 ใบพร้อมรายละเอียด",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sales/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sales", "1"]
+            },
+            "description": "ดึงข้อมูลบิลชิ้นเดียวพร้อมรายละเอียดสินค้า (เปลี่ยน ID ตามต้องการ)"
+          },
+          "response": []
+        },
+        {
+          "name": "19. Update Sale - อัปเดตการขาย (ลด/ลด)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"discount_amount\": 100.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sales/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sales", "1"]
+            },
+            "description": "อัปเดตข้อมูลการขาย (เปลี่ยน ID ตามต้องการ)"
+          },
+          "response": []
+        },
+        {
+          "name": "20. Delete Sale - ยกเลิกบิล (คืนสต็อก)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sales/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sales", "1"]
+            },
+            "description": "ยกเลิกบิลและคืนสต็อกอัตโนมัติ (เปลี่ยน ID ตามต้องการ)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📁 File Upload",
+      "item": [
+        {
+          "name": "21. Upload Image - อัปโหลดรูปภาพ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "value": "placeholder",
+                  "type": "file"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "upload"]
+            },
+            "description": "อัปโหลดรูปภาพ (รองรับ jpg, jpeg, png)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📊 Dashboard & Reports",
+      "item": [
+        {
+          "name": "22. Dashboard Summary - ดึงข้อมูลแดชบอร์ด",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard", "summary"]
+            },
+            "description": "ดึงข้อมูลสรุปแดชบอร์ด (สินค้า, รายจ่าย, การขาย, กำไร)"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

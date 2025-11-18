@@ -353,7 +353,7 @@ app.post('/api/products', authenticateToken, express.json(), async (req, res) =>
 // @desc    ดึงข้อมูลสินค้าทั้งหมด (Get all products)
 // @access  Private
 
-app.put('/api/products/:id', authenticateToken, express.json(), async (req, res) => {
+app.get('/api/products', authenticateToken, async (req, res) => {
   try {
     // 1. ดึงข้อมูลสินค้าทั้งหมดจากฐานข้อมูล
     // เราสั่ง .promise() ก่อน แล้วค่อย .query()
@@ -400,7 +400,7 @@ app.get("/api/products/:id", authenticateToken, async (req, res) => {
 // @desc    แก้ไขข้อมูลสินค้า (Update a product)
 // @access  Private
 
-app.put("/api/products/:id", authenticateToken, async (req, res) => {
+app.put("/api/products/:id", authenticateToken, express.json(), async (req, res) => {
   // ดึงข้อมูลผู้ใช้ที่กำลังแก้ไข (จาก Token)
   const { userId, username } = req.user;
 
@@ -620,7 +620,7 @@ app.post('/api/expenses', authenticateToken, express.json(), async (req, res) =>
 // @desc    ดึงข้อมูลรายจ่ายทั้งหมด (Get all expenses)
 // @access  Private
 
-app.put('/api/expenses/:id', authenticateToken, express.json(), async (req, res) => {
+app.get('/api/expenses', authenticateToken, async (req, res) => {
   try {
     // 1. ดึงข้อมูลรายจ่ายทั้งหมดจากฐานข้อมูล
     // เราอาจจะ Join ตาราง users เพื่อดึง "ชื่อ" ผู้บันทึก (created_by) มาแสดงผลด้วย
@@ -645,7 +645,7 @@ app.put('/api/expenses/:id', authenticateToken, express.json(), async (req, res)
 // @desc    แก้ไขข้อมูลรายจ่าย (Update an expense)
 // @access  Private
 
-app.put("/api/expenses/:id", authenticateToken, async (req, res) => {
+app.put("/api/expenses/:id", authenticateToken, express.json(), async (req, res) => {
   // ดึงข้อมูลผู้ใช้ที่กำลังแก้ไข (จาก Token)
   const { userId, username } = req.user;
 
@@ -930,7 +930,7 @@ app.get("/api/sales", authenticateToken, async (req, res) => {
 // @desc    ดึงข้อมูลบิล 1 ใบ พร้อมรายละเอียดสินค้า (Get single sale details)
 // @access  Private
 
-app.put('/api/sales/:id', authenticateToken, express.json(), async (req, res) => {
+app.get('/api/sales/:id', authenticateToken, async (req, res) => {
   const saleId = req.params.id;
 
   try {
@@ -1063,7 +1063,7 @@ app.delete("/api/sales/:id", authenticateToken, async (req, res) => {
 // @desc    แก้ไขบิล และ "ปรับปรุงสต็อก" อัตโนมัติ (Update Sale & Adjust Stock)
 // @access  Private (Admin Only)
 
-app.put("/api/sales/:id", authenticateToken, async (req, res) => {
+app.put("/api/sales/:id", authenticateToken, express.json(), async (req, res) => {
   // -----------------------------------------------------------------
   // (หมายเหตุ: API นี้ควรจำกัดสิทธิ์ให้เฉพาะ 'Admin' เท่านั้น)
   // if (req.user.role !== 'Admin') {
@@ -1210,6 +1210,193 @@ app.put("/api/sales/:id", authenticateToken, async (req, res) => {
     }
   }
 });
+
+// ======================== User Management Routes ========================
+
+// @route   GET /api/users
+// @desc    ดึงข้อมูลผู้ใช้ทั้งหมด (Get all users)
+// @access  Private (Admin Only - แนะนำ)
+
+app.get("/api/users", authenticateToken, async (req, res) => {
+  try {
+    // 1. ดึงข้อมูลผู้ใช้ทั้งหมด (ยกเว้น password)
+    const [users] = await db.promise().query(
+      "SELECT id, username, role, created_at FROM users ORDER BY created_at DESC"
+    );
+
+    // 2. ส่งข้อมูลกลับไป
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("❌ Error getting users:", error.message);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดที่ Server" });
+  }
+});
+
+// @route   GET /api/users/:id
+// @desc    ดึงข้อมูลผู้ใช้ 1 คน (Get single user)
+// @access  Private
+
+app.get("/api/users/:id", authenticateToken, async (req, res) => {
+  try {
+    // 1. ดึง ID จาก URL
+    const userId = req.params.id;
+
+    // 2. ค้นหาผู้ใช้ (ยกเว้น password)
+    const [users] = await db.promise().query(
+      "SELECT id, username, role, created_at FROM users WHERE id = ?",
+      [userId]
+    );
+
+    // 3. ตรวจสอบว่าหาเจอหรือไม่
+    if (users.length === 0) {
+      return res.status(404).json({ message: "ไม่พบผู้ใช้นี้ (Not Found)" });
+    }
+
+    // 4. ส่งข้อมูลกลับไป
+    res.status(200).json(users[0]);
+  } catch (error) {
+    console.error("❌ Error getting user:", error.message);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดที่ Server" });
+  }
+});
+
+// @route   PUT /api/users/:id
+// @desc    แก้ไขข้อมูลผู้ใช้ (Update a user)
+// @access  Private (Admin Only - แนะนำ, หรือผู้ใช้แก้ไขตัวเอง)
+
+app.put("/api/users/:id", authenticateToken, express.json(), async (req, res) => {
+  // ดึงข้อมูลผู้ใช้ที่กำลังแก้ไข (จาก Token)
+  const { userId: loggedInUserId, username: loggedInUsername } = req.user;
+
+  // ดึง ID ผู้ใช้ที่จะแก้ไข (จาก URL)
+  const targetUserId = req.params.id;
+
+  // รับข้อมูลใหม่จาก Frontend
+  const { username, role, password } = req.body;
+
+  try {
+    // 1. ตรวจสอบว่าผู้ใช้นี้มีอยู่จริงหรือไม่
+    const [users] = await db.promise().query(
+      "SELECT username FROM users WHERE id = ?",
+      [targetUserId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "ไม่พบผู้ใช้นี้ (Not Found)" });
+    }
+
+    const oldUsername = users[0].username;
+
+    // 2. ตรวจสอบข้อมูลเบื้องต้น (ต้องมี username อย่างน้อย)
+    if (!username) {
+      return res.status(400).json({ message: "กรุณากรอก Username" });
+    }
+
+    // 3. ถ้ามีการเปลี่ยนรหัสผ่าน ให้เข้ารหัส
+    let hashedPassword = null;
+    if (password) {
+      if (password.length < 6) {
+        return res.status(400).json({ message: "รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร" });
+      }
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
+
+    // 4. อัปเดตข้อมูล
+    if (hashedPassword) {
+      // ถ้ามีการเปลี่ยนรหัสผ่าน
+      await db.promise().query(
+        "UPDATE users SET username = ?, password = ?, role = ? WHERE id = ?",
+        [username, hashedPassword, role || "Staff", targetUserId]
+      );
+    } else {
+      // ถ้าไม่มีการเปลี่ยนรหัสผ่าน
+      await db.promise().query(
+        "UPDATE users SET username = ?, role = ? WHERE id = ?",
+        [username, role || "Staff", targetUserId]
+      );
+    }
+
+    // 5. บันทึก Log การกระทำ
+    await db.promise().query(
+      "INSERT INTO action_logs (user_id, action_type, target_table, target_id, details) VALUES (?, ?, ?, ?, ?)",
+      [
+        loggedInUserId,
+        "UPDATE",
+        "users",
+        targetUserId,
+        `User ${loggedInUsername} updated user ID: ${targetUserId} (Old: ${oldUsername}, New: ${username})`,
+      ]
+    );
+
+    // 6. ส่งคำตอบกลับไป
+    console.log(`✅ User ID ${targetUserId} updated by user '${loggedInUsername}'.`);
+    res.status(200).json({ message: "อัปเดตข้อมูลผู้ใช้สำเร็จ!" });
+  } catch (error) {
+    // ตรวจสอบ Error Code ของ MySQL
+    if (error.code === "ER_DUP_ENTRY") {
+      console.error("Error: Username already exists.");
+      return res.status(409).json({ message: "Username นี้มีผู้ใช้งานแล้ว" });
+    }
+
+    console.error("❌ Error updating user:", error.message);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดที่ Server" });
+  }
+});
+
+// @route   DELETE /api/users/:id
+// @desc    ลบผู้ใช้ (Delete a user)
+// @access  Private (Admin Only - แนะนำ)
+
+app.delete("/api/users/:id", authenticateToken, async (req, res) => {
+  // ดึงข้อมูลผู้ใช้ที่กำลังลบ (จาก Token)
+  const { userId: loggedInUserId, username: loggedInUsername } = req.user;
+
+  // ดึง ID ผู้ใช้ที่จะลบ (จาก URL)
+  const targetUserId = req.params.id;
+
+  try {
+    // 1. ป้องกันไม่ให้ลบตัวเอง
+    if (parseInt(targetUserId) === loggedInUserId) {
+      return res.status(400).json({ message: "ไม่สามารถลบตัวเองได้" });
+    }
+
+    // 2. ตรวจสอบว่าผู้ใช้นี้มีอยู่จริงหรือไม่
+    const [users] = await db.promise().query(
+      "SELECT username FROM users WHERE id = ?",
+      [targetUserId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "ไม่พบผู้ใช้นี้ (Not Found)" });
+    }
+
+    const deletedUsername = users[0].username;
+
+    // 3. สั่งลบข้อมูล
+    await db.promise().query("DELETE FROM users WHERE id = ?", [targetUserId]);
+
+    // 4. บันทึก Log การกระทำ
+    await db.promise().query(
+      "INSERT INTO action_logs (user_id, action_type, target_table, target_id, details) VALUES (?, ?, ?, ?, ?)",
+      [
+        loggedInUserId,
+        "DELETE",
+        "users",
+        targetUserId,
+        `User ${loggedInUsername} DELETED user ID: ${targetUserId} (Username: ${deletedUsername})`,
+      ]
+    );
+
+    // 5. ส่งคำตอบกลับไป
+    console.log(`✅ User ID ${targetUserId} ('${deletedUsername}') DELETED by user '${loggedInUsername}'.`);
+    res.status(200).json({ message: "ลบผู้ใช้สำเร็จ!" });
+  } catch (error) {
+    console.error("❌ Error deleting user:", error.message);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดที่ Server" });
+  }
+});
+
+// ======================== End of User Management Routes ========================
 
 // --------------------------------------- 9. Dashboard Routes (Reporting) ---------------------------------------------------------
 
