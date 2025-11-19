@@ -1475,13 +1475,19 @@ app.get("/api/dashboard/summary", authenticateToken, async (req, res) => {
       );
 
     // 8. ประกอบข้อมูลส่งกลับ
+    const totalSales = salesToday[0].totalSales || 0;
+    const totalExpenses = expensesToday[0].totalExpenses || 0;
+    const profit = totalSales - totalExpenses;
+
     const summary = {
       dateRange: {
         startDate: startDate || new Date().toISOString().split('T')[0],
         endDate: endDate || new Date().toISOString().split('T')[0]
       },
-      totalSales: salesToday[0].totalSales || 0,
-      totalExpenses: expensesToday[0].totalExpenses || 0,
+      totalSales: totalSales,
+      totalExpenses: totalExpenses,
+      profit: profit,
+      totalOrders: ordersToday[0].totalOrders || 0,
       totalBills: ordersToday[0].totalOrders || 0,
       totalProducts: totalProductsData[0].totalProducts || 0,
       lowStockCount: lowStockCountData[0].lowStockCount || 0,
@@ -1490,8 +1496,132 @@ app.get("/api/dashboard/summary", authenticateToken, async (req, res) => {
 
     res.status(200).json(summary);
   } catch (error) {
-    console.error("❌ Error getting dashboard summary:", error.message);
-    res.status(500).json({ message: "เกิดข้อผิดพลาดที่ Server" });
+    console.error("❌ Error getting dashboard summary:", error);
+    console.error("Error Stack:", error.stack);
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาดที่ Server",
+      error: error.message
+    });
+  }
+});
+
+// @route   GET /api/dashboard/charts
+// @desc    ดึงข้อมูลสำหรับแสดงกราฟทั้งหมด (Top 5, Latest 10, Stock by Product)
+// @access  Private
+
+app.get("/api/dashboard/charts", authenticateToken, async (req, res) => {
+  try {
+    // Get date range from query parameters
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
+
+
+    // 1. Top 5 สินค้าขายดี (จำนวนชิ้นที่ขายไป)
+    const [top5Products] = await db
+      .promise()
+      .query(
+        `SELECT
+          p.name,
+          SUM(sd.quantity) AS totalQuantity,
+          SUM(sd.line_total) AS totalRevenue
+        FROM sales s
+        JOIN sale_details sd ON s.id = sd.sale_id
+        JOIN products p ON sd.product_id = p.id
+        WHERE DATE(s.sale_date) ${startDate && endDate ? `BETWEEN '${startDate}' AND '${endDate}'` : '= CURDATE()'}
+        GROUP BY sd.product_id, p.name
+        ORDER BY totalQuantity DESC
+        LIMIT 5`
+      );
+
+    // 2. รายการขายล่าสุด 10 ลำดับ
+    const [latest10Sales] = await db
+      .promise()
+      .query(
+        `SELECT
+          s.id,
+          s.sale_date,
+          s.total_amount,
+          COUNT(sd.id) AS items_count,
+          u.username AS seller_name
+        FROM sales s
+        LEFT JOIN sale_details sd ON s.id = sd.sale_id
+        LEFT JOIN users u ON s.created_by = u.id
+        WHERE DATE(s.sale_date) ${startDate && endDate ? `BETWEEN '${startDate}' AND '${endDate}'` : '= CURDATE()'}
+        GROUP BY s.id
+        ORDER BY s.sale_date DESC
+        LIMIT 10`
+      );
+
+    // 3. จำนวนสินค้าตามรายการสินค้า (Stock by Product)
+    const [productStock] = await db
+      .promise()
+      .query(
+        `SELECT
+          name,
+          stock_quantity,
+          category
+        FROM products
+        ORDER BY stock_quantity DESC
+        LIMIT 10`
+      );
+
+    // 4. ยอดขายรวม, ค่าใช้จ่าย, กำไร/ขาดทุน
+    const [salesSummary] = await db
+      .promise()
+      .query(
+        `SELECT SUM(total_amount) AS totalSales FROM sales WHERE DATE(sale_date) ${startDate && endDate ? `BETWEEN '${startDate}' AND '${endDate}'` : '= CURDATE()'}`
+      );
+
+    const [expensesSummary] = await db
+      .promise()
+      .query(
+        `SELECT SUM(amount) AS totalExpenses FROM expenses WHERE DATE(expense_date) ${startDate && endDate ? `BETWEEN '${startDate}' AND '${endDate}'` : '= CURDATE()'}`
+      );
+
+    const totalSales = salesSummary[0]?.totalSales || 0;
+    const totalExpenses = expensesSummary[0]?.totalExpenses || 0;
+    const profit = totalSales - totalExpenses;
+
+    // 5. จำนวนออเดอร์ทั้งหมด
+    const [orderCount] = await db
+      .promise()
+      .query(
+        `SELECT COUNT(id) AS totalOrders FROM sales WHERE DATE(sale_date) ${startDate && endDate ? `BETWEEN '${startDate}' AND '${endDate}'` : '= CURDATE()'}`
+      );
+
+    // 6. จำนวนสินค้าในระบบทั้งหมด
+    const [productCount] = await db
+      .promise()
+      .query(
+        `SELECT COUNT(id) AS totalProducts FROM products`
+      );
+
+    // ประกอบข้อมูลส่งกลับ
+    const chartData = {
+      dateRange: {
+        startDate: startDate || new Date().toISOString().split('T')[0],
+        endDate: endDate || new Date().toISOString().split('T')[0]
+      },
+      summary: {
+        totalSales: totalSales,
+        totalExpenses: totalExpenses,
+        profit: profit,
+        totalOrders: orderCount[0]?.totalOrders || 0,
+        totalProducts: productCount[0]?.totalProducts || 0
+      },
+      top5Products: top5Products,
+      latest10Sales: latest10Sales,
+      productStock: productStock
+    };
+
+    res.status(200).json(chartData);
+  } catch (error) {
+    console.error("❌ Error getting dashboard charts:", error);
+    console.error("Error Stack:", error.stack);
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาดที่ Server",
+      error: error.message
+    });
   }
 });
 

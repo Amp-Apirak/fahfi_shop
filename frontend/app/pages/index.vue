@@ -62,78 +62,67 @@
 
     <!-- Summary Cards Section -->
     <div v-if="summary" class="summary-section">
-      <!-- Stats Cards -->
+      <!-- KPI Stats Cards -->
       <div class="stats-grid">
-        <!-- ยอดขายวันนี้ -->
-        <div class="stat-card stat-card-blue">
-          <div class="stat-header">
-            <h3 class="stat-title">ยอดขายวันนี้</h3>
-            <i class="fas fa-camera stat-icon"></i>
-          </div>
-          <div class="stat-value">{{ formatNumber(summary.totalSales) }}</div>
-          <div class="stat-currency">บาท</div>
-        </div>
-
-        <!-- อเกอร์ที่จ่างหด -->
-        <div class="stat-card stat-card-purple">
-          <div class="stat-header">
-            <h3 class="stat-title">อเกอร์ที่จ่างหด</h3>
-            <i class="fas fa-shopping-bag stat-icon"></i>
-          </div>
-          <div class="stat-value">{{ summary.totalBills || 0 }}</div>
-          <div class="stat-currency">ใบ</div>
-        </div>
-
-        <!-- สินค้าในระบบ -->
-        <div class="stat-card stat-card-orange">
-          <div class="stat-header">
-            <h3 class="stat-title">สินค้าในระบบ</h3>
-            <i class="fas fa-box-open stat-icon"></i>
-          </div>
-          <div class="stat-value">{{ summary.totalProducts || 0 }}</div>
-          <div class="stat-currency">ชิ้น</div>
-        </div>
-
-        <!-- สินค้าใกล้หมด -->
-        <div class="stat-card stat-card-red">
-          <div class="stat-header">
-            <h3 class="stat-title">สินค้าใกล้หมด</h3>
-            <i class="fas fa-exclamation-triangle stat-icon"></i>
-          </div>
-          <div class="stat-value">{{ summary.lowStockCount || 0 }}</div>
-          <div class="stat-currency">ชิ้น</div>
-        </div>
+        <StatCard
+          title="ยอดขาย"
+          :value="summary.totalSales"
+          unit="บาท"
+          icon="money"
+          variant="blue"
+        />
+        <StatCard
+          title="ค่าใช้จ่าย"
+          :value="summary.totalExpenses"
+          unit="บาท"
+          icon="dollar"
+          variant="orange"
+        />
+        <StatCard
+          title="กำไร/ขาดทุน"
+          :value="summary.profit"
+          unit="บาท"
+          icon="trending-up"
+          variant="green"
+        />
+        <StatCard
+          title="จำนวนออเดอร์"
+          :value="summary.totalOrders"
+          unit="ใบ"
+          icon="cart"
+          variant="purple"
+        />
+        <StatCard
+          title="สินค้าในระบบ"
+          :value="summary.totalProducts"
+          unit="ชิ้น"
+          icon="package"
+          variant="red"
+        />
       </div>
     </div>
 
-    <!-- Low Stock Products Section -->
-    <div v-if="summary && summary.lowStockProducts.length > 0" class="low-stock-section">
-      <div class="section-header">
-        <h4 class="section-title">
-          <i class="fas fa-box"></i> สินค้ายนิด (สต็อก < 10)
-        </h4>
+    <!-- Charts Section -->
+    <div v-if="chartData" class="charts-section">
+      <div class="charts-grid">
+        <!-- Top 5 Products Chart -->
+        <TopProductsChart
+          v-if="chartData.top5Products && chartData.top5Products.length > 0"
+          :products="chartData.top5Products"
+        />
+
+        <!-- Stock Chart -->
+        <StockChart
+          v-if="chartData.productStock && chartData.productStock.length > 0"
+          :products="chartData.productStock"
+        />
       </div>
 
-      <div class="low-stock-list">
-        <div v-for="product in summary.lowStockProducts" :key="product.id" class="stock-item">
-          <div class="stock-icon">
-            <i class="fas fa-shopping-bag"></i>
-          </div>
-          <div class="stock-info">
-            <p class="stock-name">{{ product.name }}</p>
-            <p class="stock-category">{{ product.category }}</p>
-          </div>
-          <div class="stock-quantity">
-            <span class="quantity-badge">{{ product.stock_quantity }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Empty State -->
-    <div v-if="summary && summary.lowStockProducts.length === 0" class="empty-state">
-      <i class="fas fa-check-circle"></i>
-      <p>สินค้าทั้งหมดมีสต็อกเพียงพอ</p>
+      <!-- Sales Table -->
+      <SalesTable
+        v-if="chartData.latest10Sales && chartData.latest10Sales.length > 0"
+        :sales="chartData.latest10Sales"
+      />
     </div>
   </div>
 </template>
@@ -156,6 +145,7 @@ definePageMeta({
 
 // State
 const summary = ref<any>(null)
+const chartData = ref<any>(null)
 const pending = ref(true)
 const error = ref<any>(null)
 const token = useCookie('token')
@@ -223,19 +213,19 @@ const selectDateTab = async (tab: string) => {
     const range = getDateRange(tab)
     startDate.value = range.startDate || ''
     endDate.value = range.endDate || ''
-    await fetchSummary(range.startDate, range.endDate)
+    await fetchCharts(range.startDate, range.endDate)
   }
 }
 
 // Apply Custom Date Range
 const applyDateRange = async () => {
   if (startDate.value && endDate.value) {
-    await fetchSummary(startDate.value, endDate.value)
+    await fetchCharts(startDate.value, endDate.value)
   }
 }
 
-// Fetch Dashboard Summary
-const fetchSummary = async (start?: string | null, end?: string | null) => {
+// Fetch Dashboard Charts Data
+const fetchCharts = async (start?: string | null, end?: string | null) => {
   pending.value = true
   error.value = null
 
@@ -250,12 +240,32 @@ const fetchSummary = async (start?: string | null, end?: string | null) => {
     if (start) params.startDate = start
     if (end) params.endDate = end
 
-    const response = await axios.get('http://localhost:3001/api/dashboard/summary', {
-      headers: { 'Authorization': `Bearer ${token.value}` },
-      params
-    })
-    summary.value = response.data
-    console.log('✅ Dashboard data:', response.data)
+    // Try to fetch from /api/dashboard/charts
+    try {
+      const response = await axios.get('http://localhost:3001/api/dashboard/charts', {
+        headers: { 'Authorization': `Bearer ${token.value}` },
+        params
+      })
+      chartData.value = response.data
+      summary.value = response.data.summary
+      console.log('✅ Dashboard charts data:', response.data)
+    } catch (chartError: any) {
+      // Fallback to summary endpoint if charts fails
+      console.warn('⚠️ Charts endpoint failed, using summary endpoint:', chartError.message)
+      const summaryResponse = await axios.get('http://localhost:3001/api/dashboard/summary', {
+        headers: { 'Authorization': `Bearer ${token.value}` },
+        params
+      })
+      summary.value = summaryResponse.data
+      // Mock chart data for display
+      chartData.value = {
+        summary: summaryResponse.data,
+        top5Products: [],
+        latest10Sales: [],
+        productStock: []
+      }
+      console.log('✅ Dashboard summary data (fallback):', summaryResponse.data)
+    }
   } catch (err: any) {
     console.error('❌ Error fetching dashboard:', err)
     error.value = err
@@ -276,7 +286,7 @@ onMounted(() => {
   const today = new Date().toISOString().split('T')[0]
   startDate.value = today
   endDate.value = today
-  fetchSummary(today, today)
+  fetchCharts(today, today)
 })
 </script>
 
@@ -488,10 +498,27 @@ onMounted(() => {
   width: 100%;
 }
 
+.summary-section {
+  margin-bottom: 30px;
+}
+
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
+}
+
+/* Charts Section */
+.charts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 30px;
 }
 
 /* Stat Card Base */
@@ -711,8 +738,12 @@ onMounted(() => {
   }
 
   .stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 12px;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
   }
 
   .stat-card {
@@ -720,11 +751,11 @@ onMounted(() => {
   }
 
   .stat-value {
-    font-size: 24px;
+    font-size: 20px;
   }
 
   .stat-title {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .low-stock-section {

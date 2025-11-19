@@ -4,8 +4,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   css: [
-    "bootstrap/dist/css/bootstrap.min.css",
-    "@fortawesome/fontawesome-free/css/all.min.css"  // Font Awesome Icons
+    "bootstrap/dist/css/bootstrap.min.css"
   ],
 
   app: {
@@ -23,6 +22,16 @@ export default defineNuxtConfig({
         {
           rel: "stylesheet",
           href: "https://fonts.googleapis.com/css2?family=Sarabun:wght@100;300;400;500;600;700;800&display=swap"
+        },
+        {
+          rel: "stylesheet",
+          href: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+        }
+      ],
+      script: [
+        {
+          src: "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js",
+          async: true
         }
       ]
     }

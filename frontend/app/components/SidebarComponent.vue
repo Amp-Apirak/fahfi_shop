@@ -12,7 +12,7 @@
       <div class="header-content">
         <div class="logo-container">
           <div class="logo-icon">
-            <i class="fas fa-shirt"></i>
+            <i class="fas fa-bag-shopping"></i>
           </div>
           <div v-if="!isCollapsed" class="logo-text">
             <h2 class="logo-title">Fahfi Shop</h2>

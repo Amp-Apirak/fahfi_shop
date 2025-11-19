@@ -10,7 +10,12 @@
       "Bash(git commit:*)",
       "Bash(npm cache clean:*)",
       "Bash(npx nuxt build:*)",
-      "Bash(npm ci:*)"
+      "Bash(npm ci:*)",
+      "Bash(curl:*)",
+      "Bash(npm start)",
+      "Bash(npm run dev:*)",
+      "Bash(mysql:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
