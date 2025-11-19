@@ -1,170 +1,126 @@
 <template>
-  <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h2>จัดการสินค้า (Inventory)</h2>
-      <button
-        class="btn btn-primary"
-        data-bs-toggle="modal"
-        data-bs-target="#productModal"
-        @click="openAddModal"
-      >
-        เพิ่มสินค้าใหม่
-      </button>
-    </div>
-
+  <div class="container-fluid my-4">
     <div v-if="error" class="alert alert-danger">
       เกิดข้อผิดพลาดในการดึงข้อมูล: {{ error.message }}
     </div>
-    <div v-if="pending" class="text-center">
-      <div class="spinner-border" role="status">
-        <span class="visually-hidden">Loading...</span>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-white p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <h2 class="h4 mb-0 text-primary-emphasis">
+            <i class="fas fa-box-open me-2"></i>จัดการสต็อกสินค้า
+          </h2>
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal" @click="openAddModal">
+            <i class="fas fa-plus me-2"></i>เพิ่มสินค้าใหม่
+          </button>
+        </div>
       </div>
-    </div>
-    <div v-if="products" class="card shadow-sm">
+
       <div class="card-body">
-        <table class="table table-hover table-striped">
-          <thead class="table-dark">
-            <tr>
-              <th>ID</th>
-              <th>ชื่อสินค้า</th>
-              <th>หมวดหมู่</th>
-              <th>ราคาขาย</th>
-              <th>สต็อก</th>
-              <th>การจัดการ</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="product in products" :key="product.id">
-              <td>{{ product.id }}</td>
-              <td>{{ product.name }}</td>
-              <td>{{ product.category }}</td>
-              <td>{{ product.sell_price }} บาท</td>
-              <td>{{ product.stock_quantity }} ชิ้น</td>
-              <td>
-                <button
-                  class="btn btn-sm btn-warning me-2"
-                  data-bs-toggle="modal"
-                  data-bs-target="#productModal"
-                  @click="openEditModal(product)"
-                >
-                  แก้ไข
-                </button>
-                <button
-                  class="btn btn-sm btn-danger"
-                  @click="handleDelete(product.id, product.name)"
-                >
-                  ลบ
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-if="pending" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">กำลังโหลดข้อมูล...</p>
+        </div>
+
+        <div v-else class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th class="text-center" style="width: 80px;">ID</th>
+                <th>ชื่อสินค้า</th>
+                <th>หมวดหมู่</th>
+                <th class="text-end">ราคาขาย</th>
+                <th class="text-center">สต็อก</th>
+                <th class="text-center" style="width: 120px;">การจัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="!products || products.length === 0">
+                <td colspan="6" class="text-center text-muted py-4">ไม่พบข้อมูลสินค้า</td>
+              </tr>
+              <tr v-for="product in products" :key="product.id">
+                <td class="text-center">{{ product.id }}</td>
+                <td>
+                  <h6 class="mb-0">{{ product.name }}</h6>
+                  <small v-if="product.details" class="text-muted">{{ product.details }}</small>
+                </td>
+                <td><span class="badge bg-secondary bg-opacity-25 text-secondary-emphasis">{{ product.category }}</span></td>
+                <td class="text-end">฿{{ product.sell_price.toLocaleString() }}</td>
+                <td class="text-center">{{ product.stock_quantity }}</td>
+                <td class="text-center">
+                  <button class="btn btn-sm btn-outline-primary border-0 me-1" data-bs-toggle="modal" data-bs-target="#productModal" @click="openEditModal(product)">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger border-0" @click="handleDelete(product.id, product.name)">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-    <div
-      class="modal fade"
-      id="productModal"
-      tabindex="-1"
-      aria-labelledby="productModalLabel"
-      aria-hidden="true"
-    >
+
+    <!-- Modal (structure from original file is preserved to ensure functionality) -->
+    <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="productModalLabel">
               {{ modalMode === "add" ? "เพิ่มสินค้าใหม่" : "แก้ไขสินค้า" }}
             </h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <form @submit.prevent="handleSubmit">
               <div class="mb-3">
                 <label for="name" class="form-label">ชื่อสินค้า</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  v-model="currentProduct.name"
-                  required
-                />
+                <input type="text" class="form-control" v-model="currentProduct.name" required />
               </div>
               <div class="row">
                 <div class="col-md-6 mb-3">
                   <label for="category" class="form-label">หมวดหมู่</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    v-model="currentProduct.category"
-                  />
+                  <input type="text" class="form-control" v-model="currentProduct.category" />
                 </div>
                 <div class="col-md-6 mb-3">
                   <label for="grade" class="form-label">เกรด</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    v-model="currentProduct.grade"
-                  />
+                  <input type="text" class="form-control" v-model="currentProduct.grade" />
                 </div>
               </div>
               <div class="row">
                 <div class="col-md-4 mb-3">
                   <label for="cost_price" class="form-label">ราคาต้นทุน</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    class="form-control"
-                    v-model="currentProduct.cost_price"
-                  />
+                  <input type="number" step="0.01" class="form-control" v-model="currentProduct.cost_price" />
                 </div>
                 <div class="col-md-4 mb-3">
                   <label for="sell_price" class="form-label">ราคาขาย</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    class="form-control"
-                    v-model="currentProduct.sell_price"
-                    required
-                  />
+                  <input type="number" step="0.01" class="form-control" v-model="currentProduct.sell_price" required />
                 </div>
                 <div class="col-md-4 mb-3">
                   <label for="stock_quantity" class="form-label">สต็อก</label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    v-model="currentProduct.stock_quantity"
-                  />
+                  <input type="number" class="form-control" v-model="currentProduct.stock_quantity" />
                 </div>
               </div>
               <div class="mb-3">
                 <label for="details" class="form-label">รายละเอียด</label>
-                <textarea
-                  class="form-control"
-                  rows="2"
-                  v-model="currentProduct.details"
-                ></textarea>
-              </div>
-
-              <div class="modal-footer">
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  data-bs-dismiss="modal"
-                >
-                  ยกเลิก
-                </button>
-                <button type="submit" class="btn btn-primary">
-                  {{
-                    modalMode === "add" ? "บันทึก (เพิ่ม)" : "บันทึก (แก้ไข)"
-                  }}
-                </button>
+                <textarea class="form-control" rows="2" v-model="currentProduct.details"></textarea>
               </div>
 
               <div v-if="modalError" class="alert alert-danger mt-3">
                 {{ modalError }}
+              </div>
+
+              <div class="modal-footer pt-4">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                  ยกเลิก
+                </button>
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-save me-2"></i>
+                  {{ modalMode === "add" ? "บันทึก" : "บันทึกการแก้ไข" }}
+                </button>
               </div>
             </form>
           </div>
@@ -316,6 +272,10 @@ const handleDelete = async (productId, productName) => {
 </script>
 
 <style>
+* {
+  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
 .table td,
 .table th {
   vertical-align: middle;

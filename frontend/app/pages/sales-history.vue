@@ -467,6 +467,10 @@ const submitEditSale = async () => {
 </script>
 
 <style>
+* {
+  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
 .table td,
 .table th {
   vertical-align: middle;

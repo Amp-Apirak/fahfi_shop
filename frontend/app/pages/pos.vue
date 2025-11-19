@@ -225,6 +225,10 @@ const submitSale = async () => {
 </script>
 
 <style scoped>
+* {
+  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
 /* (Optional) ทำให้การ์ดสินค้าดูดีขึ้น */
 .card:hover {
   transform: scale(1.03);

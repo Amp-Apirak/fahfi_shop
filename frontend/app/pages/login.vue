@@ -86,5 +86,13 @@ const handleLogin = async () => {
 </script>
 
 <style>
+* {
+  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body {
+  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
 /* เราสามารถเพิ่ม CSS เฉพาะหน้าได้ที่นี่ (ถ้าต้องการ) */
 </style>

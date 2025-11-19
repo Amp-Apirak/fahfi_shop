@@ -1,168 +1,749 @@
 <template>
-  <div class="container mt-5">
-    <div class="row">
-      <div class="col-md-12">
-        <h1 class="mb-4">ยินดีต้อนรับสู่ Dashboard (สรุปผลวันนี้)</h1>
-        
-        <div v-if="pending" class="text-center"><div class="spinner-border"></div></div>
-        <div v-if="error" class="alert alert-danger">
-          เกิดข้อผิดพลาดในการดึงข้อมูลสรุป: {{ error.message }}
-        </div>
-
-        <div v-if="summary" class="row">
-          <div class="col-md-4 mb-3">
-            <div class="card text-white bg-success shadow">
-              <div class="card-body">
-                <h5 class="card-title">ยอดขาย (วันนี้)</h5>
-                <h2 class="card-text">{{ formatNumber(summary.totalSales) }} บาท</h2>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4 mb-3">
-            <div class="card text-white bg-danger shadow">
-              <div class="card-body">
-                <h5 class="card-title">รายจ่าย (วันนี้)</h5>
-                <h2 class="card-text">{{ formatNumber(summary.totalExpenses) }} บาท</h2>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4 mb-3">
-            <div class="card text-white bg-info shadow">
-              <div class="card-body">
-                <h5 class="card-title">กำไร/ขาดทุน (วันนี้)</h5>
-                <h2 class="card-text">{{ formatNumber((summary.totalSales || 0) - (summary.totalExpenses || 0)) }} บาท</h2>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="row mt-4">
-          <div class="col-md-4">
-            <div class="card">
-              <div class="card-body text-center">
-                <h5 class="card-title">จัดการสินค้า</h5>
-                <p class="card-text">เพิ่ม แก้ไข ลบสินค้า</p>
-                <NuxtLink to="/products" class="btn btn-primary">เข้าสู่หน้าสินค้า</NuxtLink>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card">
-              <div class="card-body text-center">
-                <h5 class="card-title">จัดการรายจ่าย</h5>
-                <p class="card-text">บันทึกรายจ่ายต่างๆ</p>
-                <NuxtLink to="/expenses" class="btn btn-primary">เข้าสู่หน้ารายจ่าย</NuxtLink>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card">
-              <div class="card-body text-center">
-                <h5 class="card-title">ประวัติการขาย</h5>
-                <p class="card-text">ดู/แก้ไข บิลย้อนหลัง</p>
-                <NuxtLink to="/sales-history" class="btn btn-primary">เข้าสู่หน้าประวัติ</NuxtLink>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="summary && summary.lowStockProducts.length > 0" class="row mt-5">
-          <div class="col-md-12">
-            <h4><span class="text-danger">!!</span> สินค้าใกล้หมด (น้อยกว่า 10 ชิ้น)</h4>
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <table class="table table-sm table-hover">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>ชื่อสินค้า</th>
-                      <th>สต็อกคงเหลือ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="item in summary.lowStockProducts" :key="item.id">
-                      <td>{{ item.id }}</td>
-                      <td>{{ item.name }}</td>
-                      <td><span class="badge bg-danger">{{ item.stock_quantity }} ชิ้น</span></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
+  <div class="dashboard-container">
+    <!-- Date Filter Section -->
+    <div class="filter-section">
+      <div class="filter-header">
+        <h3>ตัวกรองข้อมูล</h3>
       </div>
+
+      <div class="filter-controls">
+        <!-- Quick Date Range Tabs -->
+        <div class="date-tabs">
+          <button
+            v-for="tab in dateTabs"
+            :key="tab.value"
+            @click="selectDateTab(tab.value)"
+            class="tab-btn"
+            :class="{ active: selectedDateTab === tab.value }"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
+
+        <!-- Custom Date Range -->
+        <div class="custom-date-range" v-show="selectedDateTab === 'custom'">
+          <div class="date-inputs">
+            <div class="input-group">
+              <label>วันที่เริ่มต้น:</label>
+              <input
+                v-model="startDate"
+                type="date"
+                class="date-input"
+                @change="applyDateRange"
+              />
+            </div>
+            <div class="input-group">
+              <label>วันที่สิ้นสุด:</label>
+              <input
+                v-model="endDate"
+                type="date"
+                class="date-input"
+                @change="applyDateRange"
+              />
+            </div>
+            <button @click="applyDateRange" class="apply-btn">
+              <i class="fas fa-check"></i> ใช้ช่วงวันที่
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading & Error States -->
+    <div v-if="pending" class="loading-state">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">กำลังโหลด...</span>
+      </div>
+    </div>
+
+    <div v-if="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="fas fa-exclamation-circle"></i> เกิดข้อผิดพลาดในการดึงข้อมูล: {{ error.message }}
+    </div>
+
+    <!-- Summary Cards Section -->
+    <div v-if="summary" class="summary-section">
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <!-- ยอดขายวันนี้ -->
+        <div class="stat-card stat-card-blue">
+          <div class="stat-header">
+            <h3 class="stat-title">ยอดขายวันนี้</h3>
+            <i class="fas fa-camera stat-icon"></i>
+          </div>
+          <div class="stat-value">{{ formatNumber(summary.totalSales) }}</div>
+          <div class="stat-currency">บาท</div>
+        </div>
+
+        <!-- อเกอร์ที่จ่างหด -->
+        <div class="stat-card stat-card-purple">
+          <div class="stat-header">
+            <h3 class="stat-title">อเกอร์ที่จ่างหด</h3>
+            <i class="fas fa-shopping-bag stat-icon"></i>
+          </div>
+          <div class="stat-value">{{ summary.totalBills || 0 }}</div>
+          <div class="stat-currency">ใบ</div>
+        </div>
+
+        <!-- สินค้าในระบบ -->
+        <div class="stat-card stat-card-orange">
+          <div class="stat-header">
+            <h3 class="stat-title">สินค้าในระบบ</h3>
+            <i class="fas fa-box-open stat-icon"></i>
+          </div>
+          <div class="stat-value">{{ summary.totalProducts || 0 }}</div>
+          <div class="stat-currency">ชิ้น</div>
+        </div>
+
+        <!-- สินค้าใกล้หมด -->
+        <div class="stat-card stat-card-red">
+          <div class="stat-header">
+            <h3 class="stat-title">สินค้าใกล้หมด</h3>
+            <i class="fas fa-exclamation-triangle stat-icon"></i>
+          </div>
+          <div class="stat-value">{{ summary.lowStockCount || 0 }}</div>
+          <div class="stat-currency">ชิ้น</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Low Stock Products Section -->
+    <div v-if="summary && summary.lowStockProducts.length > 0" class="low-stock-section">
+      <div class="section-header">
+        <h4 class="section-title">
+          <i class="fas fa-box"></i> สินค้ายนิด (สต็อก < 10)
+        </h4>
+      </div>
+
+      <div class="low-stock-list">
+        <div v-for="product in summary.lowStockProducts" :key="product.id" class="stock-item">
+          <div class="stock-icon">
+            <i class="fas fa-shopping-bag"></i>
+          </div>
+          <div class="stock-info">
+            <p class="stock-name">{{ product.name }}</p>
+            <p class="stock-category">{{ product.category }}</p>
+          </div>
+          <div class="stock-quantity">
+            <span class="quantity-badge">{{ product.stock_quantity }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div v-if="summary && summary.lowStockProducts.length === 0" class="empty-state">
+      <i class="fas fa-check-circle"></i>
+      <p>สินค้าทั้งหมดมีสต็อกเพียงพอ</p>
     </div>
   </div>
 </template>
 
-<script setup>
-import axios from 'axios';
+<script setup lang="ts">
+import axios from 'axios'
+import { ref, onMounted, computed } from 'vue'
+import { useAuth } from '~/composables/useAuth'
 
-// (ใหม่!) ด่านตรวจ "เฉพาะหน้า" นี้
+// Page Metadata & Middleware
 definePageMeta({
   layout: 'default',
   middleware: defineNuxtRouteMiddleware(() => {
-    const { isAdmin } = useAuth();
+    const { isAdmin } = useAuth()
     if (!isAdmin.value) {
-      // ถ้า "ไม่ใช่" Admin, เตะไปหน้า POS
-      return navigateTo('/pos');
+      return navigateTo('/pos')
     }
-    // ถ้าเป็น Admin ก็ปล่อยผ่าน
   })
-});
+})
 
+// State
+const summary = ref<any>(null)
+const pending = ref(true)
+const error = ref<any>(null)
+const token = useCookie('token')
 
+// Date Range State
+const selectedDateTab = ref('today')
+const startDate = ref('')
+const endDate = ref('')
 
-const summary = ref(null);
-const pending = ref(true);
-const error = ref(null);
-const token = useCookie('token');
+// Date Tab Options
+const dateTabs = [
+  { label: 'วันนี้', value: 'today' },
+  { label: 'สัปดาห์นี้', value: 'week' },
+  { label: 'เดือนนี้', value: 'month' },
+  { label: 'ปีนี้', value: 'year' },
+  { label: 'ทั้งหมด', value: 'all' },
+  { label: 'กำหนดเอง', value: 'custom' }
+]
 
-// ฟังก์ชันดึงข้อมูลสรุป
-const fetchSummary = async () => {
-  pending.value = true;
-  error.value = null;
+// Get date range based on selected tab
+const getDateRange = (tab: string) => {
+  const today = new Date()
+  const start = new Date()
+  const end = new Date()
 
-  console.log('🔑 Token:', token.value);
+  switch (tab) {
+    case 'today':
+      start.setDate(today.getDate())
+      end.setDate(today.getDate())
+      break
+    case 'week':
+      start.setDate(today.getDate() - today.getDay())
+      end.setDate(today.getDate())
+      break
+    case 'month':
+      start.setDate(1)
+      end.setDate(today.getDate())
+      break
+    case 'year':
+      start.setMonth(0)
+      start.setDate(1)
+      end.setDate(today.getDate())
+      end.setMonth(today.getMonth())
+      break
+    case 'all':
+      return { startDate: null, endDate: null }
+    case 'custom':
+      if (startDate.value && endDate.value) {
+        return { startDate: startDate.value, endDate: endDate.value }
+      }
+      return { startDate: null, endDate: null }
+  }
+
+  return {
+    startDate: start.toISOString().split('T')[0],
+    endDate: end.toISOString().split('T')[0]
+  }
+}
+
+// Select Date Tab
+const selectDateTab = async (tab: string) => {
+  selectedDateTab.value = tab
+
+  if (tab !== 'custom') {
+    const range = getDateRange(tab)
+    startDate.value = range.startDate || ''
+    endDate.value = range.endDate || ''
+    await fetchSummary(range.startDate, range.endDate)
+  }
+}
+
+// Apply Custom Date Range
+const applyDateRange = async () => {
+  if (startDate.value && endDate.value) {
+    await fetchSummary(startDate.value, endDate.value)
+  }
+}
+
+// Fetch Dashboard Summary
+const fetchSummary = async (start?: string | null, end?: string | null) => {
+  pending.value = true
+  error.value = null
 
   if (!token.value) {
-    console.warn('⚠️ ไม่มี Token - กรุณา Login');
-    pending.value = false;
-    return;
+    console.warn('⚠️ No Token - Please Login')
+    pending.value = false
+    return
   }
 
   try {
+    const params: any = {}
+    if (start) params.startDate = start
+    if (end) params.endDate = end
+
     const response = await axios.get('http://localhost:3001/api/dashboard/summary', {
-      headers: { 'Authorization': `Bearer ${token.value}` }
-    });
-    summary.value = response.data;
-    console.log('✅ Dashboard data:', response.data);
-  } catch (err) {
-    console.error('❌ Error fetching dashboard:', err);
-    console.error('Error details:', err.response?.data || err.message);
-    error.value = err;
+      headers: { 'Authorization': `Bearer ${token.value}` },
+      params
+    })
+    summary.value = response.data
+    console.log('✅ Dashboard data:', response.data)
+  } catch (err: any) {
+    console.error('❌ Error fetching dashboard:', err)
+    error.value = err
   } finally {
-    pending.value = false;
+    pending.value = false
   }
-};
+}
 
-// ฟังก์ชันแปลงตัวเลขให้เป็นทศนิยม 2 ตำแหน่ง
-const formatNumber = (value) => {
-  const num = Number(value) || 0;
-  return num.toFixed(2);
-};
+// Format Number Helper
+const formatNumber = (value: any) => {
+  const num = Number(value) || 0
+  return num.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+}
 
-// เรียกใช้เมื่อ component โหลด
+// Lifecycle
 onMounted(() => {
-  fetchSummary();
-});
+  // Set initial date range to today
+  const today = new Date().toISOString().split('T')[0]
+  startDate.value = today
+  endDate.value = today
+  fetchSummary(today, today)
+})
 </script>
 
 <style scoped>
-/* (Optional) ทำให้การ์ดสรุปผลดูเด่นขึ้น */
-.card-text {
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Filter Section */
+.filter-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+.filter-header {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.filter-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.filter-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Date Tabs */
+.date-tabs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  padding: 10px 20px;
+  border: 2px solid #e5e7eb;
+  background: white;
+  color: #6b7280;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 13px;
   font-weight: 600;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tab-btn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Custom Date Range */
+.custom-date-range {
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.date-inputs {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.input-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.date-input {
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: white;
+  color: #1f2937;
+}
+
+.date-input:hover {
+  border-color: #3b82f6;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.apply-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.apply-btn:hover {
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+  transform: translateY(-2px);
+}
+
+.apply-btn:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .filter-section {
+    padding: 16px;
+  }
+
+  .date-tabs {
+    gap: 8px;
+  }
+
+  .tab-btn {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+
+  .date-inputs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .input-group {
+    min-width: auto;
+  }
+
+  .apply-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.loading-state .spinner-border {
+  width: 50px;
+  height: 50px;
+  border-width: 4px;
+}
+
+/* Summary Section */
+.summary-section {
+  width: 100%;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+/* Stat Card Base */
+.stat-card {
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  color: white;
+}
+
+.stat-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Stat Card Colors - Solid Background */
+.stat-card-blue {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.stat-card-purple {
+  background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+}
+
+.stat-card-orange {
+  background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+}
+
+.stat-card-red {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+}
+
+/* Stat Card Content */
+.stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.stat-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  flex: 1;
+}
+
+.stat-icon {
+  font-size: 24px;
+  opacity: 0.7;
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+
+.stat-currency {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+/* Low Stock Section */
+.low-stock-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+.section-header {
+  margin-bottom: 20px;
+  border-bottom: 2px solid #f3f4f6;
+  padding-bottom: 16px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-title i {
+  font-size: 20px;
+  color: #f59e0b;
+}
+
+/* Low Stock List */
+.low-stock-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stock-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  border-left: 4px solid #f3f4f6;
+}
+
+.stock-item:hover {
+  background: #f3f4f6;
+  border-left-color: #ef4444;
+}
+
+.stock-icon {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.stock-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.stock-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stock-category {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 4px 0 0 0;
+}
+
+.stock-quantity {
+  display: flex;
+  align-items: center;
+}
+
+.quantity-badge {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+.empty-state i {
+  font-size: 48px;
+  color: #10b981;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.empty-state p {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Alert Style */
+.alert {
+  border-radius: 12px;
+  border: none;
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.alert i {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-container {
+    gap: 20px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .stat-title {
+    font-size: 12px;
+  }
+
+  .low-stock-section {
+    padding: 16px;
+  }
+
+  .stock-item {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .stock-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .stock-name {
+    font-size: 14px;
+  }
 }
 </style>

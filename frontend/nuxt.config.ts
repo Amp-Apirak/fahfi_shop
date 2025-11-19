@@ -8,6 +8,26 @@ export default defineNuxtConfig({
     "@fortawesome/fontawesome-free/css/all.min.css"  // Font Awesome Icons
   ],
 
+  app: {
+    head: {
+      link: [
+        {
+          rel: "preconnect",
+          href: "https://fonts.googleapis.com"
+        },
+        {
+          rel: "preconnect",
+          href: "https://fonts.gstatic.com",
+          crossorigin: "anonymous"
+        },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=Sarabun:wght@100;300;400;500;600;700;800&display=swap"
+        }
+      ]
+    }
+  },
+
   vite: {
     define: {
       "process.env.DEBUG": false,

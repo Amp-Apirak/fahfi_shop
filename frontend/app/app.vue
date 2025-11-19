@@ -12,3 +12,13 @@
 const { syncUserState } = useAuth();
 syncUserState();
 </script>
+
+<style>
+* {
+  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+html, body {
+  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+</style>

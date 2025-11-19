@@ -1411,41 +1411,80 @@ app.get("/api/dashboard/summary", authenticateToken, async (req, res) => {
   // }
 
   try {
-    // (ใช้ CURDATE() ของ MySQL เพื่อเอา "เฉพาะวันนี้")
+    // Get date range from query parameters
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
 
-    // 1. ยอดขายรวม (วันนี้)
+    // Build date condition
+    let dateCondition = "DATE(sale_date) = CURDATE()"; // Default: today
+    let dateConditionExpense = "DATE(expense_date) = CURDATE()";
+
+    if (startDate && endDate) {
+      // Custom date range
+      dateCondition = `DATE(sale_date) BETWEEN '${startDate}' AND '${endDate}'`;
+      dateConditionExpense = `DATE(expense_date) BETWEEN '${startDate}' AND '${endDate}'`;
+    }
+
+    // 1. ยอดขายรวม
     const [salesToday] = await db
       .promise()
       .query(
-        "SELECT SUM(total_amount) AS totalSales FROM sales WHERE DATE(sale_date) = CURDATE()"
+        `SELECT SUM(total_amount) AS totalSales FROM sales WHERE ${dateCondition}`
       );
 
-    // 2. ยอดรายจ่ายรวม (วันนี้)
+    // 2. ยอดรายจ่ายรวม
     const [expensesToday] = await db
       .promise()
       .query(
-        "SELECT SUM(amount) AS totalExpenses FROM expenses WHERE DATE(expense_date) = CURDATE()"
+        `SELECT SUM(amount) AS totalExpenses FROM expenses WHERE ${dateConditionExpense}`
       );
 
-    // 3. จำนวนบิล (วันนี้)
+    // 3. จำนวนบิล
     const [ordersToday] = await db
       .promise()
       .query(
-        "SELECT COUNT(id) AS totalOrders FROM sales WHERE DATE(sale_date) = CURDATE()"
+        `SELECT COUNT(id) AS totalOrders FROM sales WHERE ${dateCondition}`
       );
 
-    // 4. สินค้าที่ใกล้หมด (สต็อก < 10)
+    // 4. สินค้าที่ใกล้หมด (สต็อก < 10) พร้อม category
     const [lowStockProducts] = await db
       .promise()
       .query(
-        "SELECT id, name, stock_quantity FROM products WHERE stock_quantity < 10 ORDER BY stock_quantity ASC"
+        "SELECT id, name, category, stock_quantity FROM products WHERE stock_quantity < 10 ORDER BY stock_quantity ASC"
       );
 
-    // 5. ประกอบร่างส่งกลับไป
+    // 5. นับจำนวนสินค้าทั้งหมด
+    const [totalProductsData] = await db
+      .promise()
+      .query(
+        "SELECT COUNT(id) AS totalProducts FROM products"
+      );
+
+    // 6. นับจำนวนบิลทั้งหมด (ไม่ใช่เฉพาะช่วงวันที่)
+    const [totalBillsData] = await db
+      .promise()
+      .query(
+        "SELECT COUNT(id) AS totalBills FROM sales"
+      );
+
+    // 7. นับจำนวนสินค้าที่ใกล้หมด
+    const [lowStockCountData] = await db
+      .promise()
+      .query(
+        "SELECT COUNT(id) AS lowStockCount FROM products WHERE stock_quantity < 10"
+      );
+
+    // 8. ประกอบข้อมูลส่งกลับ
     const summary = {
+      dateRange: {
+        startDate: startDate || new Date().toISOString().split('T')[0],
+        endDate: endDate || new Date().toISOString().split('T')[0]
+      },
       totalSales: salesToday[0].totalSales || 0,
       totalExpenses: expensesToday[0].totalExpenses || 0,
-      totalOrders: ordersToday[0].totalOrders || 0,
+      totalBills: ordersToday[0].totalOrders || 0,
+      totalProducts: totalProductsData[0].totalProducts || 0,
+      lowStockCount: lowStockCountData[0].lowStockCount || 0,
       lowStockProducts: lowStockProducts,
     };
 

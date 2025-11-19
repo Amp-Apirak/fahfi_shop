@@ -1,68 +1,65 @@
 <template>
-  <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h2>จัดการรายจ่าย (Expenses)</h2>
-      <button 
-        class="btn btn-primary" 
-        data-bs-toggle="modal" 
-        data-bs-target="#expenseModal"
-        @click="openAddModal"
-      >
-        บันทึกรายจ่ายใหม่
-      </button>
-    </div>
-
+  <div class="container-fluid my-4">
     <div v-if="error" class="alert alert-danger">
       เกิดข้อผิดพลาดในการดึงข้อมูล: {{ error.message }}
     </div>
-    <div v-if="pending" class="text-center">
-      <div class="spinner-border" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-    </div>
 
-    <div v-if="expenses" class="card shadow-sm">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <h2 class="h4 mb-0 text-primary-emphasis">
+            <i class="fas fa-money-bill-wave me-2"></i>จัดการรายจ่าย
+          </h2>
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#expenseModal" @click="openAddModal">
+            <i class="fas fa-plus me-2"></i>บันทึกรายจ่ายใหม่
+          </button>
+        </div>
+      </div>
       <div class="card-body">
-        <table class="table table-hover table-striped">
-          <thead class="table-dark">
-            <tr>
-              <th>วันที่</th>
-              <th>หมวดหมู่</th>
-              <th>รายละเอียด</th>
-              <th>จำนวนเงิน</th>
-              <th>บันทึกโดย</th>
-              <th>การจัดการ</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="expense in expenses" :key="expense.id">
-              <td>{{ new Date(expense.expense_date).toLocaleDateString('th-TH') }}</td>
-              <td>{{ expense.category }}</td>
-              <td>{{ expense.details }}</td>
-              <td>{{ expense.amount }} บาท</td>
-              <td>{{ expense.created_by_username }}</td>
-              <td>
-                <button 
-                  class="btn btn-sm btn-warning me-2" 
-                  data-bs-toggle="modal" 
-                  data-bs-target="#expenseModal"
-                  @click="openEditModal(expense)"
-                >
-                  แก้ไข
-                </button>
-                <button 
-                  class="btn btn-sm btn-danger"
-                  @click="handleDelete(expense.id, expense.details)"
-                >
-                  ลบ
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-if="pending" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">กำลังโหลดข้อมูล...</p>
+        </div>
+        <div v-else class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">วันที่</th>
+                <th scope="col">หมวดหมู่</th>
+                <th scope="col">รายละเอียด</th>
+                <th scope="col" class="text-end">จำนวนเงิน</th>
+                <th scope="col">บันทึกโดย</th>
+                <th scope="col" class="text-center">การจัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="!expenses || expenses.length === 0">
+                <td colspan="6" class="text-center text-muted py-4">ไม่พบข้อมูลรายจ่าย</td>
+              </tr>
+              <tr v-for="expense in expenses" :key="expense.id">
+                <td>{{ new Date(expense.expense_date).toLocaleDateString('th-TH') }}</td>
+                <td><span class="badge bg-secondary bg-opacity-25 text-secondary-emphasis">{{ expense.category }}</span></td>
+                <td>{{ expense.details }}</td>
+                <td class="text-end">฿{{ expense.amount.toLocaleString() }}</td>
+                <td>{{ expense.created_by_username }}</td>
+                <td class="text-center">
+                  <button class="btn btn-sm btn-outline-primary border-0 me-1" data-bs-toggle="modal" data-bs-target="#expenseModal" @click="openEditModal(expense)">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger border-0" @click="handleDelete(expense.id, expense.details)">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
+    <!-- Modal (structure from original file is preserved to ensure functionality) -->
     <div class="modal fade" id="expenseModal" tabindex="-1" aria-labelledby="expenseModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -71,7 +68,6 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            
             <form @submit.prevent="handleSubmit">
               <div class="mb-3">
                 <label for="expense_date" class="form-label">วันที่</label>
@@ -87,26 +83,28 @@
                   <input type="number" step="0.01" class="form-control" v-model="currentExpense.amount" required>
                 </div>
               </div>
-               <div class="mb-3">
+              <div class="mb-3">
                 <label for="details" class="form-label">รายละเอียด</label>
                 <textarea class="form-control" rows="2" v-model="currentExpense.details" required></textarea>
               </div>
 
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="submit" class="btn btn-primary">{{ modalMode === 'add' ? 'บันทึก (เพิ่ม)' : 'บันทึก (แก้ไข)' }}</button>
-              </div>
-              
               <div v-if="modalError" class="alert alert-danger mt-3">
                 {{ modalError }}
               </div>
-            </form>
 
+              <div class="modal-footer pt-4">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-save me-2"></i>
+                  {{ modalMode === 'add' ? 'บันทึก' : 'บันทึกการแก้ไข' }}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
     </div>
-    </div>
+  </div>
 </template>
 
 <script setup>
@@ -231,6 +229,10 @@ const handleDelete = async (expenseId, expenseDetails) => {
 </script>
 
 <style>
+* {
+  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
 .table td, .table th {
   vertical-align: middle;
 }
