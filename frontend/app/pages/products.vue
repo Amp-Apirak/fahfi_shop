@@ -1,5 +1,8 @@
 <template>
   <div class="container-fluid my-4">
+    <!-- Font Awesome CDN (Ensure it's loaded) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+
     <div v-if="error" class="alert alert-danger">
       เกิดข้อผิดพลาดในการดึงข้อมูล: {{ error.message }}
     </div>
@@ -29,6 +32,7 @@
             <thead class="table-light">
               <tr>
                 <th class="text-center" style="width: 80px;">ID</th>
+                <th class="text-center" style="width: 100px;">รูปภาพ</th>
                 <th>ชื่อสินค้า</th>
                 <th>หมวดหมู่</th>
                 <th class="text-end">ราคาขาย</th>
@@ -38,10 +42,23 @@
             </thead>
             <tbody>
               <tr v-if="!products || products.length === 0">
-                <td colspan="6" class="text-center text-muted py-4">ไม่พบข้อมูลสินค้า</td>
+                <td colspan="7" class="text-center text-muted py-4">ไม่พบข้อมูลสินค้า</td>
               </tr>
               <tr v-for="product in products" :key="product.id">
                 <td class="text-center">{{ product.id }}</td>
+                <td class="text-center">
+                  <div v-if="product.product_image_url" class="product-image-cell">
+                    <img
+                      :src="product.product_image_url"
+                      :alt="product.name"
+                      class="product-thumbnail"
+                      onerror="this.src='https://via.placeholder.com/80?text=No+Image'"
+                    />
+                  </div>
+                  <div v-else class="product-image-placeholder">
+                    <i class="fas fa-image"></i>
+                  </div>
+                </td>
                 <td>
                   <h6 class="mb-0">{{ product.name }}</h6>
                   <small v-if="product.details" class="text-muted">{{ product.details }}</small>
@@ -50,11 +67,11 @@
                 <td class="text-end">฿{{ product.sell_price.toLocaleString() }}</td>
                 <td class="text-center">{{ product.stock_quantity }}</td>
                 <td class="text-center">
-                  <button class="btn btn-sm btn-outline-primary border-0 me-1" data-bs-toggle="modal" data-bs-target="#productModal" @click="openEditModal(product)">
-                    <i class="fas fa-edit"></i>
+                  <button class="btn btn-sm btn-outline-primary border-0 me-2 action-btn-edit" title="แก้ไข" data-bs-toggle="modal" data-bs-target="#productModal" @click="openEditModal(product)">
+                    <i class="fas fa-pen-to-square"></i>
                   </button>
-                  <button class="btn btn-sm btn-outline-danger border-0" @click="handleDelete(product.id, product.name)">
-                    <i class="fas fa-trash-alt"></i>
+                  <button class="btn btn-sm btn-outline-danger border-0 action-btn-delete" title="ลบ" @click="handleDelete(product.id, product.name)">
+                    <i class="fas fa-trash"></i>
                   </button>
                 </td>
               </tr>
@@ -109,6 +126,55 @@
                 <textarea class="form-control" rows="2" v-model="currentProduct.details"></textarea>
               </div>
 
+              <!-- Image Upload Section -->
+              <div class="mb-3">
+                <label for="product_image" class="form-label">รูปภาพสินค้า</label>
+                <div class="image-upload-area">
+                  <!-- Preview Image -->
+                  <div v-if="currentProduct.product_image_url || imagePreview" class="mb-2">
+                    <img
+                      :src="imagePreview || currentProduct.product_image_url"
+                      alt="Product Preview"
+                      class="product-preview-img"
+                    />
+                    <small class="d-block text-muted mt-2">
+                      {{ currentProduct.product_image_url ? 'URL รูปภาพปัจจุบัน' : 'ตัวอย่างรูปภาพที่เลือก' }}
+                    </small>
+                  </div>
+
+                  <!-- File Input or URL Input -->
+                  <div class="upload-options">
+                    <div class="mb-2">
+                      <label class="form-label small">อัปโหลดรูปภาพ</label>
+                      <input
+                        type="file"
+                        class="form-control"
+                        accept="image/jpeg,image/png,image/jpg"
+                        @change="handleImageUpload"
+                        :disabled="uploadingImage"
+                      />
+                      <small class="text-muted">รองรับไฟล์ JPG, PNG เท่านั้น (ไม่เกิน 5MB)</small>
+                      <div v-if="uploadingImage" class="mt-2">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                          <span class="visually-hidden">กำลังอัปโหลด...</span>
+                        </div>
+                        <span class="ms-2">กำลังอัปโหลดรูปภาพ...</span>
+                      </div>
+                    </div>
+
+                    <div class="mb-2">
+                      <label class="form-label small">หรือใส่ URL รูปภาพ</label>
+                      <input
+                        type="url"
+                        class="form-control"
+                        placeholder="https://example.com/image.jpg"
+                        v-model="currentProduct.product_image_url"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div v-if="modalError" class="alert alert-danger mt-3">
                 {{ modalError }}
               </div>
@@ -146,10 +212,13 @@ const products = ref(null);
 const pending = ref(true); // สถานะกำลังโหลด (สำคัญ)
 const error = ref(null);
 const token = useCookie("token");
+const { handleApiError } = useApiError();
 
 // 4. ตัวแปร State สำหรับ Modal (กล่องเด้ง)
 const modalMode = ref("add"); // 'add' หรือ 'edit'
 const modalError = ref(null);
+const uploadingImage = ref(false); // สถานะการอัปโหลดรูปภาพ
+const imagePreview = ref(null); // Preview รูปภาพที่เลือก
 
 // (นี่คือ "พิมพ์เขียว" หรือ "กล่องเปล่า" สำหรับฟอร์ม)
 const defaultProductForm = {
@@ -176,9 +245,64 @@ const fetchProducts = async () => {
     });
     products.value = response.data; // เก็บข้อมูล
   } catch (err) {
+    // ตรวจสอบ Auth Error (403, 401)
+    const isAuthError = await handleApiError(err);
+    if (isAuthError) return;
+
     error.value = err.response ? err.response.data : err;
   } finally {
     pending.value = false; // โหลดเสร็จแล้ว (ไม่ว่าจะสำเร็จหรือล้มเหลว)
+  }
+};
+
+// (เพิ่มใหม่) ฟังก์ชันอัปโหลดรูปภาพ
+const handleImageUpload = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // ตรวจสอบขนาดไฟล์ (ไม่เกิน 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    modalError.value = "ขนาดไฟล์ไม่ควรเกิน 5MB";
+    return;
+  }
+
+  // สร้าง preview สำหรับแสดงให้ผู้ใช้เห็นก่อน
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    imagePreview.value = e.target.result;
+  };
+  reader.readAsDataURL(file);
+
+  // อัปโหลดรูปไปยัง Backend
+  uploadingImage.value = true;
+  try {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await axios.post(
+      "http://localhost:3001/api/upload",
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    // ถ้าอัปโหลดสำเร็จ ให้เก็บ URL รูปภาพ
+    currentProduct.value.product_image_url = response.data.imageUrl;
+    modalError.value = null;
+  } catch (err) {
+    // ตรวจสอบ Auth Error (403, 401)
+    const isAuthError = await handleApiError(err);
+    if (isAuthError) return;
+
+    modalError.value =
+      "ไม่สามารถอัปโหลดรูปภาพได้: " +
+      (err.response ? err.response.data.message : err.message);
+  } finally {
+    uploadingImage.value = false;
   }
 };
 
@@ -203,6 +327,7 @@ const openAddModal = () => {
   modalMode.value = "add";
   currentProduct.value = { ...defaultProductForm }; // รีเซ็ตฟอร์มให้ว่าง
   modalError.value = null;
+  imagePreview.value = null; // รีเซ็ต preview รูปภาพ
 };
 
 // (เมื่อกดปุ่ม "แก้ไข" ในตาราง)
@@ -210,6 +335,7 @@ const openEditModal = (product) => {
   modalMode.value = "edit";
   currentProduct.value = { ...product }; // คัดลอกข้อมูลสินค้ามาใส่ฟอร์ม
   modalError.value = null;
+  imagePreview.value = null; // รีเซ็ต preview รูปภาพ
 };
 
 // (เมื่อกด "บันทึก" (Submit) ในฟอร์ม)
@@ -263,6 +389,10 @@ const handleDelete = async (productId, productName) => {
     // (อาจจะเพิ่ม Toast Notification "ลบสำเร็จ" ที่นี่ในอนาคต)
 
   } catch (err) {
+    // ตรวจสอบ Auth Error (403, 401)
+    const isAuthError = await handleApiError(err);
+    if (isAuthError) return;
+
     // 4. จัดการ Error (เช่น ลบไม่ได้เพราะมีประวัติการขาย)
     const message = err.response ? err.response.data.message : err.message;
     console.error('Error deleting product:', message);
@@ -271,7 +401,7 @@ const handleDelete = async (productId, productName) => {
 };
 </script>
 
-<style>
+<style scoped>
 * {
   font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
@@ -279,5 +409,118 @@ const handleDelete = async (productId, productName) => {
 .table td,
 .table th {
   vertical-align: middle;
+}
+
+/* Product Image Styles */
+.product-image-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.product-thumbnail {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.product-thumbnail:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.product-image-placeholder {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f3f4f6;
+  border-radius: 8px;
+  border: 2px dashed #d1d5db;
+  color: #9ca3af;
+  font-size: 24px;
+}
+
+/* Image Upload Styles */
+.image-upload-area {
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.product-preview-img {
+  max-width: 200px;
+  max-height: 200px;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.upload-options {
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.upload-options .mb-2 {
+  margin-bottom: 12px;
+}
+
+.upload-options .form-label {
+  color: #374151;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.upload-options small {
+  display: block;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* Action Button Styles */
+.action-btn-edit,
+.action-btn-delete {
+  padding: 8px 10px;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  transition: all 0.2s ease;
+}
+
+.action-btn-edit {
+  color: #3b82f6;
+}
+
+.action-btn-edit:hover {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  transform: scale(1.1);
+}
+
+.action-btn-delete {
+  color: #ef4444;
+}
+
+.action-btn-delete:hover {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  transform: scale(1.1);
+}
+
+.action-btn-edit i,
+.action-btn-delete i {
+  font-size: 16px;
 }
 </style>
