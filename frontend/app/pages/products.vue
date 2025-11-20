@@ -47,16 +47,24 @@
               <tr v-for="product in products" :key="product.id">
                 <td class="text-center">{{ product.id }}</td>
                 <td class="text-center">
-                  <div v-if="product.product_image_url" class="product-image-cell">
-                    <img
-                      :src="product.product_image_url"
-                      :alt="product.name"
-                      class="product-thumbnail"
-                      onerror="this.src='https://via.placeholder.com/80?text=No+Image'"
-                    />
-                  </div>
-                  <div v-else class="product-image-placeholder">
-                    <i class="fas fa-image"></i>
+                  <div class="product-image-cell">
+                    <div
+                      v-if="product.product_image_url"
+                      class="product-image-wrapper"
+                      :key="product.product_image_url"
+                    >
+                      <img
+                        :src="product.product_image_url"
+                        :alt="product.name"
+                        class="product-thumbnail"
+                        loading="lazy"
+                        @error="handleImageError"
+                      />
+                    </div>
+                    <div v-else class="product-image-placeholder">
+                      <i class="fas fa-image"></i>
+                      <small>No Image</small>
+                    </div>
                   </div>
                 </td>
                 <td>
@@ -200,6 +208,7 @@
 // 1. Imports
 import axios from "axios";
 import { ref, onMounted } from "vue";
+import Swal from "sweetalert2";
 // (เรา "ไม่" import { Modal } from 'bootstrap' ที่นี่ เพื่อป้องกัน Error ฝั่ง Server (SSR))
 
 // 2. การตั้งค่า Layout
@@ -244,12 +253,23 @@ const fetchProducts = async () => {
       headers: { Authorization: `Bearer ${token.value}` },
     });
     products.value = response.data; // เก็บข้อมูล
+    console.log('✅ Products loaded:', products.value.length, 'items');
+
+    // Debug: check image URLs
+    products.value.forEach((product) => {
+      if (product.product_image_url) {
+        console.log(`✅ Product ${product.id} (${product.name}) image URL:`, product.product_image_url);
+      } else {
+        console.warn(`⚠️ Product ${product.id} (${product.name}) has no image URL`);
+      }
+    });
   } catch (err) {
     // ตรวจสอบ Auth Error (403, 401)
     const isAuthError = await handleApiError(err);
     if (isAuthError) return;
 
     error.value = err.response ? err.response.data : err;
+    console.error('❌ Error loading products:', error.value);
   } finally {
     pending.value = false; // โหลดเสร็จแล้ว (ไม่ว่าจะสำเร็จหรือล้มเหลว)
   }
@@ -292,6 +312,8 @@ const handleImageUpload = async (event) => {
 
     // ถ้าอัปโหลดสำเร็จ ให้เก็บ URL รูปภาพ
     currentProduct.value.product_image_url = response.data.imageUrl;
+    console.log('✅ Image uploaded successfully:', response.data.imageUrl);
+    console.log('📦 Product object after image upload:', currentProduct.value);
     modalError.value = null;
   } catch (err) {
     // ตรวจสอบ Auth Error (403, 401)
@@ -301,8 +323,20 @@ const handleImageUpload = async (event) => {
     modalError.value =
       "ไม่สามารถอัปโหลดรูปภาพได้: " +
       (err.response ? err.response.data.message : err.message);
+    console.error('❌ Image upload failed:', err);
   } finally {
     uploadingImage.value = false;
+  }
+};
+
+// (เพิ่มใหม่) ฟังก์ชันจัดการเมื่อรูปภาพโหลดไม่ได้
+const handleImageError = (event) => {
+  console.warn('⚠️ Image failed to load:', event.target.src);
+  event.target.style.display = 'none';
+  // ให้แสดง placeholder แทน
+  const placeholder = event.target.parentElement.nextElementSibling;
+  if (placeholder) {
+    placeholder.style.display = 'flex';
   }
 };
 
@@ -316,7 +350,24 @@ onMounted(() => {
   // เชื่อม Modal (ตรวจสอบว่า Bootstrap โหลดแล้ว)
   const modalElement = document.getElementById("productModal");
   if (modalElement && typeof window !== "undefined" && window.bootstrap) {
-    bsModal = new window.bootstrap.Modal(modalElement);
+    // ตรวจสอบว่า Bootstrap Modal ดำเนิน
+    if (!window.bootstrap.Modal) {
+      console.error('❌ Bootstrap.Modal is not available!');
+    } else {
+      bsModal = new window.bootstrap.Modal(modalElement);
+      console.log('✅ Bootstrap Modal initialized successfully');
+
+      // ตรวจสอบ Modal events
+      modalElement.addEventListener('hidden.bs.modal', () => {
+        console.log('📢 Modal hidden event fired');
+      });
+
+      modalElement.addEventListener('show.bs.modal', () => {
+        console.log('📢 Modal show event fired');
+      });
+    }
+  } else {
+    console.warn('⚠️ Bootstrap not loaded or Modal element not found');
   }
 });
 
@@ -336,6 +387,12 @@ const openEditModal = (product) => {
   currentProduct.value = { ...product }; // คัดลอกข้อมูลสินค้ามาใส่ฟอร์ม
   modalError.value = null;
   imagePreview.value = null; // รีเซ็ต preview รูปภาพ
+
+  console.log('📝 Edit modal opened for product:', {
+    id: product.id,
+    name: product.name,
+    product_image_url: product.product_image_url,
+  });
 };
 
 // (เมื่อกด "บันทึก" (Submit) ในฟอร์ม)
@@ -343,60 +400,191 @@ const handleSubmit = async () => {
   modalError.value = null;
 
   try {
+    console.log('📝 Submitting product:', modalMode.value);
+    console.log('📦 Product data being sent:', {
+      id: currentProduct.value.id,
+      name: currentProduct.value.name,
+      product_image_url: currentProduct.value.product_image_url,
+      product_image_url_length: currentProduct.value.product_image_url ? currentProduct.value.product_image_url.length : 0,
+    });
+
     if (modalMode.value === "add") {
-      await axios.post(
+      const response = await axios.post(
         "http://localhost:3001/api/products",
         currentProduct.value,
         { headers: { Authorization: `Bearer ${token.value}` } }
       );
+      console.log('✅ Product added:', response.data);
     } else if (modalMode.value === "edit") {
-      await axios.put(
+      const response = await axios.put(
         `http://localhost:3001/api/products/${currentProduct.value.id}`,
         currentProduct.value,
         { headers: { Authorization: `Bearer ${token.value}` } }
       );
+      console.log('✅ Product updated:', response.data);
     }
 
-    // ปิด Modal (ตรวจสอบว่ามี bsModal ก่อน)
-    if (bsModal) {
-      bsModal.hide();
-    }
+    // 1. ดึงข้อมูลใหม่จาก DB ก่อน (สำคัญ!)
+    console.log('🔄 Refreshing products list...');
     await fetchProducts();
+    console.log('✅ Products refreshed');
+
+    // 2. ปิด Bootstrap Modal อย่างชัดเจน
+    console.log('🔄 Closing Bootstrap Modal...');
+    const modalElement = document.getElementById('productModal');
+    if (modalElement) {
+      try {
+        // วิธีที่ 1: ใช้ Bootstrap Modal API
+        const modal = window.bootstrap?.Modal.getInstance(modalElement);
+        if (modal) {
+          modal.hide();
+          console.log('✅ Modal.hide() called via Bootstrap API');
+        } else {
+          console.warn('⚠️ Bootstrap Modal instance not found, using fallback');
+          // วิธีที่ 2: ใช้ jQuery Bootstrap
+          if (typeof $ !== 'undefined' && $.fn.modal) {
+            $(modalElement).modal('hide');
+            console.log('✅ Modal hidden via jQuery fallback');
+          } else {
+            // วิธีที่ 3: ลบ class และ style ด้วยมือ
+            modalElement.classList.remove('show');
+            modalElement.style.display = 'none';
+            console.log('✅ Modal hidden via manual CSS');
+          }
+        }
+      } catch (e) {
+        console.error('❌ Error closing modal:', e);
+      }
+
+      // ลบ backdrop และ scroll lock อย่างชัดเจน
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // ลบ modal-open class จาก body
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+
+      // ลบ backdrop element ถ้ายังมี
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      backdrops.forEach(backdrop => {
+        backdrop.remove();
+      });
+      if (backdrops.length > 0) {
+        console.log(`✅ Removed ${backdrops.length} modal backdrop(s)`);
+      }
+
+      console.log('✅ Modal cleanup completed');
+    }
+
+    // 3. แสดง Success message (Sweet Alert)
+    const successTitle = modalMode.value === "add" ? "เพิ่มสินค้าสำเร็จ!" : "แก้ไขสินค้าสำเร็จ!";
+    const successMessage = modalMode.value === "add"
+      ? `เพิ่มสินค้า "${currentProduct.value.name}" เสร็จแล้ว`
+      : `แก้ไขสินค้า "${currentProduct.value.name}" เสร็จแล้ว`;
+
+    console.log('🎉 Showing success alert...');
+    await Swal.fire({
+      icon: "success",
+      title: successTitle,
+      text: successMessage,
+      confirmButtonText: "ตกลง",
+      confirmButtonColor: "#3b82f6",
+      timer: 2000,
+      timerProgressBar: true,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didClose: async () => {
+        console.log('✨ Alert closed - resetting form');
+        // รีเซ็ต form หลังปิด Alert
+        currentProduct.value = { ...defaultProductForm };
+        imagePreview.value = null;
+        modalError.value = null;
+      }
+    });
+
+    console.log('✨ Submit completed successfully - Modal closed and alert shown');
   } catch (err) {
-    modalError.value =
+    // ตรวจสอบ Auth Error (403, 401)
+    const isAuthError = await handleApiError(err);
+    if (isAuthError) return;
+
+    const errorMessage =
       "เกิดข้อผิดพลาด: " +
       (err.response ? err.response.data.message : err.message);
+
+    modalError.value = errorMessage;
+    console.error('❌ Submit error:', err);
+
+    // แสดง Error Alert
+    await Swal.fire({
+      icon: "error",
+      title: "เกิดข้อผิดพลาด!",
+      text: errorMessage,
+      confirmButtonText: "ตกลง",
+      confirmButtonColor: "#ef4444",
+    });
   }
 };
 
 // 8. ฟังก์ชันสำหรับลบสินค้า
 const handleDelete = async (productId, productName) => {
-  // 1. (สำคัญ) ถามเพื่อยืนยันก่อนลบ
-  if (!window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบ "${productName}" (ID: ${productId})?`)) {
-    return; // ถ้ากด "Cancel" ให้ออกจากฟังก์ชัน
+  // 1. (สำคัญ) ถามเพื่อยืนยันก่อนลบ (ใช้ Sweet Alert)
+  const result = await Swal.fire({
+    icon: "warning",
+    title: "ยืนยันการลบ",
+    text: `คุณแน่ใจหรือไม่ว่าต้องการลบ "${productName}" (ID: ${productId})?`,
+    showCancelButton: true,
+    confirmButtonText: "ใช่ ลบเลย",
+    cancelButtonText: "ยกเลิก",
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+  });
+
+  if (!result.isConfirmed) {
+    return; // ถ้าเลือก "ยกเลิก" ให้ออกจากฟังก์ชัน
   }
 
   try {
-    // 2. ยิง API "DELETE" (Backend ขั้นตอนที่ 10)
+    // 2. ยิง API "DELETE"
+    console.log(`🗑️ Deleting product ID: ${productId}`);
     await axios.delete(
       `http://localhost:3001/api/products/${productId}`,
       { headers: { 'Authorization': `Bearer ${token.value}` } }
     );
 
+    console.log(`✅ Product ${productId} deleted successfully`);
+
     // 3. (สำคัญ) ถ้าลบสำเร็จ ให้รีเฟรชตาราง
     await fetchProducts();
-    
-    // (อาจจะเพิ่ม Toast Notification "ลบสำเร็จ" ที่นี่ในอนาคต)
+
+    // 4. แสดง Success Alert
+    await Swal.fire({
+      icon: "success",
+      title: "ลบสินค้าสำเร็จ!",
+      text: `ลบ "${productName}" เสร็จแล้ว`,
+      confirmButtonText: "ตกลง",
+      confirmButtonColor: "#3b82f6",
+      timer: 2000,
+      timerProgressBar: true,
+    });
 
   } catch (err) {
     // ตรวจสอบ Auth Error (403, 401)
     const isAuthError = await handleApiError(err);
     if (isAuthError) return;
 
-    // 4. จัดการ Error (เช่น ลบไม่ได้เพราะมีประวัติการขาย)
+    // 5. จัดการ Error (เช่น ลบไม่ได้เพราะมีประวัติการขาย)
     const message = err.response ? err.response.data.message : err.message;
-    console.error('Error deleting product:', message);
-    window.alert(`เกิดข้อผิดพลาด: ${message}`); // แสดง Error ให้ผู้ใช้ทราบ
+    console.error('❌ Error deleting product:', message);
+
+    // แสดง Error Alert
+    await Swal.fire({
+      icon: "error",
+      title: "ไม่สามารถลบสินค้า!",
+      text: message,
+      confirmButtonText: "ตกลง",
+      confirmButtonColor: "#ef4444",
+    });
   }
 };
 </script>
@@ -433,10 +621,18 @@ const handleDelete = async (productId, productName) => {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+.product-image-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 80px;
+  height: 80px;
+}
+
 .product-image-placeholder {
   width: 80px;
   height: 80px;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   background: #f3f4f6;
@@ -444,6 +640,12 @@ const handleDelete = async (productId, productName) => {
   border: 2px dashed #d1d5db;
   color: #9ca3af;
   font-size: 24px;
+  gap: 4px;
+}
+
+.product-image-placeholder small {
+  font-size: 10px;
+  color: #9ca3af;
 }
 
 /* Image Upload Styles */

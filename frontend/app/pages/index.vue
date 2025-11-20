@@ -171,26 +171,30 @@ const dateTabs = [
 const getDateRange = (tab: string) => {
   const today = new Date()
   const start = new Date()
-  const end = new Date()
+  const end = new Date(today)
 
   switch (tab) {
     case 'today':
-      start.setDate(today.getDate())
-      end.setDate(today.getDate())
+      start.setHours(0, 0, 0, 0)
+      end.setHours(23, 59, 59, 999)
       break
     case 'week':
-      start.setDate(today.getDate() - today.getDay())
-      end.setDate(today.getDate())
+      // Set to start of week (Sunday or Monday based on locale)
+      const dayOfWeek = today.getDay()
+      start.setDate(today.getDate() - dayOfWeek)
+      start.setHours(0, 0, 0, 0)
+      end.setHours(23, 59, 59, 999)
       break
     case 'month':
       start.setDate(1)
-      end.setDate(today.getDate())
+      start.setHours(0, 0, 0, 0)
+      end.setHours(23, 59, 59, 999)
       break
     case 'year':
       start.setMonth(0)
       start.setDate(1)
-      end.setDate(today.getDate())
-      end.setMonth(today.getMonth())
+      start.setHours(0, 0, 0, 0)
+      end.setHours(23, 59, 59, 999)
       break
     case 'all':
       return { startDate: null, endDate: null }
