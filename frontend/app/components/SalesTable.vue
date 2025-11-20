@@ -7,8 +7,11 @@
           <tr>
             <th>ลำดับ</th>
             <th>วันที่-เวลา</th>
+            <th>ชื่อสินค้า</th>
             <th>จำนวนรายการ</th>
-            <th>ยอดขาย</th>
+            <th>ส่วนลด</th>
+            <th>ยอดรวมสุทธิ</th>
+            <th>ยอดขาย (รวม)</th>
             <th>ผู้ขาย</th>
           </tr>
         </thead>
@@ -16,8 +19,17 @@
           <tr v-for="(sale, index) in sales" :key="sale.id" :class="{ 'highlight-row': index % 2 === 0 }">
             <td class="text-center">{{ index + 1 }}</td>
             <td>{{ formatDateTime(sale.sale_date) }}</td>
+            <td class="product-names">
+              <div class="product-list">{{ sale.product_names || '-' }}</div>
+            </td>
             <td class="text-center">
               <span class="badge">{{ sale.items_count }}</span>
+            </td>
+            <td class="text-end">
+              <span class="discount-amount">{{ formatNumber(sale.total_discount || 0) }}</span>
+            </td>
+            <td class="text-end">
+              <span class="net-total">{{ formatNumber(sale.net_total || 0) }}</span>
             </td>
             <td class="text-end">
               <span class="amount">{{ formatNumber(sale.total_amount) }}</span>
@@ -43,6 +55,9 @@ interface Sale {
   total_amount: number
   items_count: number
   seller_name: string
+  product_names?: string
+  total_discount?: number
+  net_total?: number
 }
 
 interface Props {
@@ -155,6 +170,29 @@ const formatNumber = (value: number) => {
 .seller-name {
   color: #6366f1;
   font-weight: 500;
+}
+
+.product-names {
+  max-width: 200px;
+}
+
+.product-list {
+  font-size: 13px;
+  color: #1f2937;
+  word-wrap: break-word;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+.discount-amount {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.net-total {
+  color: #8b5cf6;
+  font-weight: 700;
+  font-size: 14px;
 }
 
 .empty-state {

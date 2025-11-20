@@ -214,7 +214,7 @@ app.post('/api/login', express.json(), async (req, res) => {
         role: user.role,
       }, // ข้อมูลที่เราอยากเก็บใน "ตั๋ว"
       process.env.JWT_SECRET, // กุญแจลับ (จากไฟล์ .env)
-      { expiresIn: "8h" } // Token นี้มีอายุ 8 ชั่วโมง
+      { expiresIn: "30d" } // Token นี้มีอายุ 30 วัน (สำหรับ Dev)
     );
 
     // 6. (สำคัญ) บันทึก Log การ Login
@@ -1533,7 +1533,7 @@ app.get("/api/dashboard/charts", authenticateToken, async (req, res) => {
         LIMIT 5`
       );
 
-    // 2. รายการขายล่าสุด 10 ลำดับ
+    // 2. รายการขายล่าสุด 10 ลำดับ (พร้อมรายละเอียดสินค้า)
     const [latest10Sales] = await db
       .promise()
       .query(
@@ -1542,9 +1542,13 @@ app.get("/api/dashboard/charts", authenticateToken, async (req, res) => {
           s.sale_date,
           s.total_amount,
           COUNT(sd.id) AS items_count,
-          u.username AS seller_name
+          u.username AS seller_name,
+          GROUP_CONCAT(p.name SEPARATOR ', ') AS product_names,
+          SUM(sd.discount_amount) AS total_discount,
+          SUM(sd.line_total) AS net_total
         FROM sales s
         LEFT JOIN sale_details sd ON s.id = sd.sale_id
+        LEFT JOIN products p ON sd.product_id = p.id
         LEFT JOIN users u ON s.created_by = u.id
         WHERE DATE(s.sale_date) ${startDate && endDate ? `BETWEEN '${startDate}' AND '${endDate}'` : '= CURDATE()'}
         GROUP BY s.id

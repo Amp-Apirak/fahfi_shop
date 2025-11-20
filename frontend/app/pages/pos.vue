@@ -103,6 +103,7 @@ definePageMeta({
 });
 
 const token = useCookie('token');
+const { handleApiError } = useApiError();
 
 // 2. State สำหรับ "รายการสินค้า" (ฝั่งซ้าย)
 const products = ref([]);
@@ -124,6 +125,10 @@ const fetchProducts = async () => {
     // กรองเอาเฉพาะสินค้าที่ "มีสต็อก" (มากกว่า 0)
     products.value = response.data; //.filter(p => p.stock_quantity > 0); (อาจจะเก็บไว้กรองทีหลัง)
   } catch (err) {
+    // ตรวจสอบ Auth Error (403, 401)
+    const isAuthError = await handleApiError(err);
+    if (isAuthError) return;
+
     error.value = err.response ? err.response.data : err;
   } finally {
     pending.value = false;
@@ -204,8 +209,8 @@ const submitSale = async () => {
 
     // 2. ยิง API (Backend ขั้นตอนที่ 15)
     await axios.post(
-      'http://localhost:3001/api/sales', 
-      saleData, 
+      'http://localhost:3001/api/sales',
+      saleData,
       { headers: { 'Authorization': `Bearer ${token.value}` } }
     );
 
@@ -215,6 +220,10 @@ const submitSale = async () => {
     await fetchProducts(); // รีเฟรชรายการสินค้า (เพื่อให้เห็นสต็อกที่อัปเดต)
 
   } catch (err) {
+    // ตรวจสอบ Auth Error (403, 401)
+    const isAuthError = await handleApiError(err);
+    if (isAuthError) return;
+
     const message = err.response ? err.response.data.message : err.message;
     saleError.value = `เกิดข้อผิดพลาด: ${message}`;
     // (เช่น Error "สต็อกสินค้า...ไม่เพียงพอ" ที่เราทำไว้ใน Backend)

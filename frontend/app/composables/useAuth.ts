@@ -3,6 +3,7 @@
 export const useAuth = () => {
   const token = useCookie('token');
   const userCookie = useCookie('user');
+  const router = useRouter();
 
   // (ฟังก์ชันนี้จะ Sync ข้อมูลจาก Cookie มาใส่ใน State ตอนที่เว็บโหลดครั้งแรก)
   const syncUserState = () => {
@@ -67,6 +68,12 @@ export const useAuth = () => {
     await navigateTo('/login');
   };
 
+  // 7. (เพิ่มใหม่) ฟังก์ชันตรวจสอบ Token หมดอายุ
+  const handleTokenExpired = async () => {
+    console.warn('⚠️ Token Expired - Logging out...');
+    await logout();
+  };
+
   return {
     // ค่า
     isLoggedIn,
@@ -77,6 +84,7 @@ export const useAuth = () => {
     // ฟังก์ชัน
     login,
     logout,
-    syncUserState
+    syncUserState,
+    handleTokenExpired
   };
 };

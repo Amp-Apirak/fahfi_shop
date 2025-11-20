@@ -149,6 +149,8 @@ const chartData = ref<any>(null)
 const pending = ref(true)
 const error = ref<any>(null)
 const token = useCookie('token')
+const auth = useAuth()
+const { handleApiError } = useApiError()
 
 // Date Range State
 const selectedDateTab = ref('today')
@@ -267,7 +269,10 @@ const fetchCharts = async (start?: string | null, end?: string | null) => {
       console.log('✅ Dashboard summary data (fallback):', summaryResponse.data)
     }
   } catch (err: any) {
-    console.error('❌ Error fetching dashboard:', err)
+    // ใช้ composable จัดการ Error
+    const isAuthError = await handleApiError(err)
+    if (isAuthError) return
+
     error.value = err
   } finally {
     pending.value = false
