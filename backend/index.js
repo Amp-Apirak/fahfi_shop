@@ -963,6 +963,32 @@ app.post('/api/sales', authenticateToken, express.json(), async (req, res) => {
   }
 });
 
+// @route   GET /api/sales/recent
+// @desc    ดึงประวัติการขายล่าสุด 5 รายการ พร้อมชื่อสินค้า (Get recent 5 sales with product names)
+// @access  Private
+app.get("/api/sales/recent", authenticateToken, async (req, res) => {
+  try {
+    const [sales] = await db.promise().query(
+      `SELECT 
+        s.id, s.sale_date, s.total_amount, s.created_by,
+        u.username AS created_by_username,
+        GROUP_CONCAT(p.name SEPARATOR ', ') AS product_names
+      FROM sales s
+      LEFT JOIN users u ON s.created_by = u.id
+      LEFT JOIN sale_details sd ON s.id = sd.sale_id
+      LEFT JOIN products p ON sd.product_id = p.id
+      GROUP BY s.id
+      ORDER BY s.sale_date DESC
+      LIMIT 5`
+    );
+
+    res.status(200).json(sales);
+  } catch (error) {
+    console.error("❌ Error getting recent sales:", error.message);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดที่ Server" });
+  }
+});
+
 // @route   GET /api/sales
 // @desc    ดึงประวัติการขาย (หัวบิล) ทั้งหมด (Get all sales)
 // @access  Private

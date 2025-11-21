@@ -1,11 +1,14 @@
 <template>
   <div class="container-fluid my-4">
     <!-- Font Awesome CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+    />
 
     <div class="row g-3">
       <!-- ส่วนรายการสินค้า (ฝั่งซ้าย) -->
-      <div class="col-lg-7">
+      <div class="col-lg-7 order-lg-1 order-2">
         <div class="card shadow-sm">
           <div class="card-header bg-white p-3">
             <h3 class="h5 mb-0 text-primary-emphasis">
@@ -28,34 +31,49 @@
             </div>
 
             <!-- Products Table -->
-            <div v-else class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+            <div
+              v-else
+              class="table-responsive"
+              style="max-height: 70vh; overflow-y: auto"
+            >
               <table class="table table-hover align-middle">
                 <thead class="table-light sticky-top">
                   <tr>
-                    <th class="text-center" style="width: 80px;">ID</th>
-                    <th class="text-center" style="width: 100px;">รูปภาพ</th>
+                    <th class="text-center" style="width: 80px">ID</th>
+                    <th class="text-center" style="width: 100px">รูปภาพ</th>
                     <th>ชื่อสินค้า</th>
                     <th>รายละเอียด</th>
                     <th class="text-center">หมวดหมู่</th>
                     <th class="text-end">ราคาขาย</th>
                     <th class="text-center">สต็อก</th>
-                    <th class="text-center" style="width: 80px;">การจัดการ</th>
+                    <th class="text-center" style="width: 80px">การจัดการ</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-if="!products || products.length === 0">
-                    <td colspan="8" class="text-center text-muted py-4">ไม่พบข้อมูลสินค้า</td>
+                    <td colspan="8" class="text-center text-muted py-4">
+                      ไม่พบข้อมูลสินค้า
+                    </td>
                   </tr>
                   <tr
                     v-for="product in products"
                     :key="product.id"
-                    :class="{'table-secondary': product.stock_quantity <= 0, 'cursor-pointer-row': product.stock_quantity > 0}"
+                    :class="{
+                      'table-secondary': product.stock_quantity <= 0,
+                      'cursor-pointer-row': product.stock_quantity > 0,
+                    }"
                     @click="addToCart(product)"
-                    :style="{ cursor: product.stock_quantity > 0 ? 'pointer' : 'not-allowed' }"
+                    :style="{
+                      cursor:
+                        product.stock_quantity > 0 ? 'pointer' : 'not-allowed',
+                    }"
                   >
                     <td class="text-center fw-bold">{{ product.id }}</td>
                     <td class="text-center">
-                      <div v-if="product.product_image_url" class="product-image-cell">
+                      <div
+                        v-if="product.product_image_url"
+                        class="product-image-cell"
+                      >
                         <img
                           :src="product.product_image_url"
                           :alt="product.name"
@@ -71,21 +89,40 @@
                       <h6 class="mb-0 fw-bold">{{ product.name }}</h6>
                     </td>
                     <td>
-                      <small v-if="product.details" class="text-muted d-block">{{ product.details }}</small>
-                      <small v-else class="text-muted fst-italic">ไม่มีรายละเอียด</small>
+                      <small
+                        v-if="product.details"
+                        class="text-muted d-block"
+                        >{{ product.details }}</small
+                      >
+                      <small v-else class="text-muted fst-italic"
+                        >ไม่มีรายละเอียด</small
+                      >
                     </td>
                     <td class="text-center">
-                      <span class="badge bg-secondary bg-opacity-25 text-secondary-emphasis">
-                        {{ product.category || '-' }}
+                      <span
+                        class="badge bg-secondary bg-opacity-25 text-secondary-emphasis"
+                      >
+                        {{ product.category || "-" }}
                       </span>
                     </td>
                     <td class="text-end">
-                      <span class="fw-bold text-success">฿{{ product.sell_price.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+                      <span class="fw-bold text-success"
+                        >฿{{
+                          product.sell_price.toLocaleString("th-TH", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })
+                        }}</span
+                      >
                     </td>
                     <td class="text-center">
                       <span
                         class="badge"
-                        :class="product.stock_quantity > 0 ? 'bg-success' : 'bg-danger'"
+                        :class="
+                          product.stock_quantity > 0
+                            ? 'bg-success'
+                            : 'bg-danger'
+                        "
                       >
                         {{ product.stock_quantity }}
                       </span>
@@ -109,8 +146,9 @@
       </div>
 
       <!-- ส่วนตะกร้าสินค้า (ฝั่งขวา) -->
-      <div class="col-lg-5">
-        <div class="card shadow-sm sticky-top" style="top: 20px;">
+      <div class="col-lg-5 order-lg-2 order-1">
+        <!-- 1. ตะกร้าสินค้า -->
+        <div class="card shadow-sm mb-3" style="top: 20px">
           <div class="card-header bg-white p-3">
             <h3 class="h5 mb-0 text-primary-emphasis">
               <i class="fas fa-shopping-bag me-2"></i>ตะกร้าสินค้า
@@ -119,20 +157,31 @@
           <div class="card-body">
             <!-- Empty Cart State -->
             <div v-if="cart.length === 0" class="text-center text-muted py-4">
-              <i class="fas fa-shopping-cart" style="font-size: 48px; opacity: 0.3;"></i>
+              <i
+                class="fas fa-shopping-cart"
+                style="font-size: 48px; opacity: 0.3"
+              ></i>
               <p class="mt-3">ยังไม่มีสินค้าในตะกร้า</p>
             </div>
 
             <!-- Cart Items List -->
-            <div v-else style="max-height: 40vh; overflow-y: auto;">
-              <div v-for="(item, index) in cart" :key="index" class="cart-item card border mb-3">
+            <div v-else style="max-height: 40vh; overflow-y: auto">
+              <div
+                v-for="(item, index) in cart"
+                :key="index"
+                class="cart-item card border mb-3"
+              >
                 <div class="card-body p-3">
                   <div class="d-flex gap-3 mb-2">
                     <!-- รูปภาพสินค้า -->
                     <div class="flex-shrink-0">
                       <div v-if="products" class="cart-item-image">
                         <img
-                          :src="products.find(p => p.id === item.product_id)?.product_image_url || 'https://via.placeholder.com/60?text=No+Image'"
+                          :src="
+                            products.find((p) => p.id === item.product_id)
+                              ?.product_image_url ||
+                            'https://via.placeholder.com/60?text=No+Image'
+                          "
                           :alt="item.name"
                           class="cart-thumbnail"
                           onerror="this.src='https://via.placeholder.com/60?text=No+Image'"
@@ -142,10 +191,19 @@
 
                     <!-- รายละเอียดสินค้า -->
                     <div class="flex-grow-1">
-                      <div class="d-flex justify-content-between align-items-start mb-2">
+                      <div
+                        class="d-flex justify-content-between align-items-start mb-2"
+                      >
                         <div>
                           <h6 class="mb-1 fw-bold">{{ item.name }}</h6>
-                          <small class="text-muted">ราคา: ฿{{ item.sell_price.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</small>
+                          <small class="text-muted"
+                            >ราคา: ฿{{
+                              item.sell_price.toLocaleString("th-TH", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })
+                            }}</small
+                          >
                         </div>
                         <button
                           class="btn btn-sm btn-outline-danger border-0"
@@ -165,7 +223,7 @@
                             v-model.number="item.quantity"
                             min="1"
                             @change="updateQuantity(item)"
-                          >
+                          />
                         </div>
                         <div class="col-6">
                           <label class="form-label small mb-1">ส่วนลด</label>
@@ -174,7 +232,7 @@
                             class="form-control form-control-sm"
                             v-model.number="item.discount_amount"
                             min="0"
-                          >
+                          />
                         </div>
                       </div>
 
@@ -182,7 +240,12 @@
                         <div class="d-flex justify-content-between">
                           <span class="text-muted small">รวม:</span>
                           <span class="fw-bold text-success small">
-                            ฿{{ getLineTotal(item).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                            ฿{{
+                              getLineTotal(item).toLocaleString("th-TH", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })
+                            }}
                           </span>
                         </div>
                       </div>
@@ -201,7 +264,12 @@
               <div class="d-flex justify-content-between mb-3">
                 <span class="h5 mb-0">ยอดรวมสุทธิ:</span>
                 <span class="h5 mb-0 text-success fw-bold">
-                  ฿{{ totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                  ฿{{
+                    totalAmount.toLocaleString("th-TH", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })
+                  }}
                 </span>
               </div>
 
@@ -218,7 +286,7 @@
                     id="payment-transfer"
                     value="transfer"
                     v-model="paymentMethod"
-                  >
+                  />
                   <label class="form-check-label" for="payment-transfer">
                     <i class="fas fa-bank me-2"></i>โอนจ่าย
                   </label>
@@ -231,7 +299,7 @@
                     id="payment-qrcode"
                     value="qrcode"
                     v-model="paymentMethod"
-                  >
+                  />
                   <label class="form-check-label" for="payment-qrcode">
                     <i class="fas fa-qrcode me-2"></i>สแกน QR Code
                   </label>
@@ -249,9 +317,12 @@
                   @click="submitSale"
                   :disabled="cart.length === 0 || isSubmitting"
                 >
-                  <span v-if="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+                  <span
+                    v-if="isSubmitting"
+                    class="spinner-border spinner-border-sm me-2"
+                  ></span>
                   <i v-else class="fas fa-check-circle me-2"></i>
-                  {{ isSubmitting ? 'กำลังบันทึก...' : 'ยืนยันการขาย' }}
+                  {{ isSubmitting ? "กำลังบันทึก..." : "ยืนยันการขาย" }}
                 </button>
                 <button
                   class="btn btn-outline-secondary"
@@ -265,6 +336,75 @@
             </div>
           </div>
         </div>
+
+        </div>
+
+
+      <!-- 3. ประวัติการขายล่าสุด -->
+      <div class="col-lg-5 offset-lg-7 order-lg-3 order-3">
+        <div class="card shadow-sm">
+          <div
+            class="card-header bg-white p-3 d-flex justify-content-between align-items-center"
+          >
+            <h3 class="h5 mb-0 text-secondary-emphasis">
+              <i class="fas fa-history me-2"></i>ประวัติการขายล่าสุด
+            </h3>
+            <NuxtLink
+              to="/sales-history"
+              class="btn btn-sm btn-outline-primary rounded-pill px-3"
+            >
+              ดูทั้งหมด
+            </NuxtLink>
+          </div>
+          <div class="card-body p-0">
+            <div v-if="salesPending" class="text-center py-4">
+              <div
+                class="spinner-border text-secondary spinner-border-sm"
+                role="status"
+              ></div>
+            </div>
+            <div
+              v-else-if="recentSales.length === 0"
+              class="text-center text-muted py-4"
+            >
+              <small>ยังไม่มีรายการขาย</small>
+            </div>
+            <div v-else class="list-group list-group-flush">
+              <div
+                v-for="sale in recentSales"
+                :key="sale.id"
+                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-3 py-3"
+              >
+                <div>
+                  <div class="fw-bold text-dark mb-1">บิล #{{ sale.id }}</div>
+                  <div class="small text-secondary mb-1 text-truncate" style="max-width: 250px;">
+                    <i class="fas fa-box-open me-1 text-muted"></i>{{ sale.product_names || '-' }}
+                  </div>
+                  <small class="text-muted">
+                    <i class="far fa-clock me-1"></i>
+                    {{
+                      new Date(sale.sale_date).toLocaleTimeString("th-TH", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    }}
+                  </small>
+                  <span class="badge bg-light text-dark border ms-2">{{
+                    sale.created_by_username
+                  }}</span>
+                </div>
+                <div class="text-end">
+                  <div class="fw-bold text-success">
+                    ฿{{ sale.total_amount.toLocaleString("th-TH") }}
+                  </div>
+                  <small class="text-muted">{{
+                    new Date(sale.sale_date).toLocaleDateString("th-TH")
+                  }}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -274,7 +414,8 @@
         <div class="modal-content payment-modal">
           <div class="modal-header">
             <h5 class="modal-title fw-bold">
-              <i class="fas fa-qrcode me-2 text-primary"></i>สแกน QR Code เพื่อชำระเงิน
+              <i class="fas fa-qrcode me-2 text-primary"></i>สแกน QR Code
+              เพื่อชำระเงิน
             </h5>
             <button
               type="button"
@@ -287,7 +428,12 @@
             <div class="mb-4">
               <p class="text-muted mb-2">ยอดรวม:</p>
               <h3 class="text-success fw-bold">
-                ฿{{ totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                ฿{{
+                  totalAmount.toLocaleString("th-TH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
+                }}
               </h3>
             </div>
 
@@ -321,9 +467,12 @@
               @click="confirmPayment"
               :disabled="isSubmitting"
             >
-              <span v-if="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+              <span
+                v-if="isSubmitting"
+                class="spinner-border spinner-border-sm me-2"
+              ></span>
               <i v-else class="fas fa-check me-2"></i>
-              {{ isSubmitting ? 'กำลังบันทึก...' : 'ยืนยันการชำระเงิน' }}
+              {{ isSubmitting ? "กำลังบันทึก..." : "ยืนยันการชำระเงิน" }}
             </button>
           </div>
         </div>
@@ -333,16 +482,16 @@
 </template>
 
 <script setup>
-import axios from 'axios';
-import { ref, onMounted, computed } from 'vue';
-import Swal from 'sweetalert2';
+import axios from "axios";
+import { ref, onMounted, computed } from "vue";
+import Swal from "sweetalert2";
 
 // 1. การตั้งค่า Layout
 definePageMeta({
-  layout: 'default'
+  layout: "default",
 });
 
-const token = useCookie('token');
+const token = useCookie("token");
 const { handleApiError } = useApiError();
 
 // 2. State สำหรับ "รายการสินค้า" (ฝั่งซ้าย)
@@ -356,17 +505,21 @@ const isSubmitting = ref(false); // สถานะกำลังบันท�
 const saleError = ref(null);
 
 // 4. State สำหรับการชำระเงิน
-const paymentMethod = ref('transfer'); // 'transfer' หรือ 'qrcode'
+const paymentMethod = ref("transfer"); // 'transfer' หรือ 'qrcode'
 const showPaymentModal = ref(false);
 const qrCodeData = ref(null); // ข้อมูล QR code สำหรับสแกน
-const merchantName = ref('Fahfi Shop'); // ชื่อร้านค้า
+const merchantName = ref("Fahfi Shop"); // ชื่อร้านค้า
+
+// 5. State สำหรับ "ประวัติการขายล่าสุด" (New!)
+const recentSales = ref([]);
+const salesPending = ref(false);
 
 // 4. ฟังก์ชันดึงข้อมูลสินค้า (เมื่อเปิดหน้า)
 const fetchProducts = async () => {
   pending.value = true;
   try {
-    const response = await axios.get('http://localhost:3001/api/products', {
-      headers: { 'Authorization': `Bearer ${token.value}` }
+    const response = await axios.get("http://localhost:3001/api/products", {
+      headers: { Authorization: `Bearer ${token.value}` },
     });
     products.value = response.data;
   } catch (err) {
@@ -380,20 +533,38 @@ const fetchProducts = async () => {
   }
 };
 
+// ฟังก์ชันดึงประวัติการขายล่าสุด (New!)
+const fetchRecentSales = async () => {
+  salesPending.value = true;
+  try {
+    const response = await axios.get('http://localhost:3001/api/sales/recent', {
+      headers: { 'Authorization': `Bearer ${token.value}` }
+    });
+    recentSales.value = response.data;
+  } catch (err) {
+    console.error("Error fetching recent sales:", err);
+  } finally {
+    salesPending.value = false;
+  }
+};
+
 onMounted(() => {
   fetchProducts();
+  fetchRecentSales(); // ดึงข้อมูลเมื่อเปิดหน้า
 });
 
 // 5. ฟังก์ชันจัดการ "ตะกร้าสินค้า" (Cart)
 
 const addToCart = (product) => {
   if (product.stock_quantity <= 0) {
-    alert('สินค้านี้หมดสต็อก');
+    alert("สินค้านี้หมดสต็อก");
     return;
   }
 
   // ตรวจสอบว่ามีในตะกร้าหรือยัง
-  const existingItem = cart.value.find(item => item.product_id === product.id);
+  const existingItem = cart.value.find(
+    (item) => item.product_id === product.id
+  );
 
   if (existingItem) {
     // ถ้ามีแล้ว ให้เพิ่มจำนวน
@@ -406,7 +577,7 @@ const addToCart = (product) => {
       sell_price: product.sell_price,
       quantity: 1,
       discount_amount: 0,
-      stock: product.stock_quantity
+      stock: product.stock_quantity,
     });
   }
 };
@@ -416,7 +587,7 @@ const removeFromCart = (index) => {
 };
 
 const clearCart = () => {
-  if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการล้างตะกร้า?')) {
+  if (window.confirm("คุณแน่ใจหรือไม่ว่าต้องการล้างตะกร้า?")) {
     cart.value = [];
     saleError.value = null;
   }
@@ -435,7 +606,7 @@ const updateQuantity = (item) => {
 
 // ฟังก์ชันคำนวณรวมต่อรายการ
 const getLineTotal = (item) => {
-  return (item.sell_price * item.quantity) - item.discount_amount;
+  return item.sell_price * item.quantity - item.discount_amount;
 };
 
 // 6. (สำคัญ) การคำนวณยอดรวม (Computed Property)
@@ -448,7 +619,7 @@ const totalAmount = computed(() => {
 // 7. ฟังก์ชัน "ยืนยันการขาย" (Submit)
 const submitSale = async () => {
   // ถ้าเลือก QR code ให้แสดง QR code modal ก่อน
-  if (paymentMethod.value === 'qrcode') {
+  if (paymentMethod.value === "qrcode") {
     showPaymentModal.value = true;
     return;
   }
@@ -468,39 +639,40 @@ const confirmPayment = async () => {
   try {
     // 1. เตรียม "ตะกร้า" (Cart)
     const saleData = {
-      cart: cart.value.map(item => ({
+      cart: cart.value.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity,
-        discount_amount: item.discount_amount
+        discount_amount: item.discount_amount,
       })),
       totalAmount: finalAmount,
-      paymentMethod: paymentMethod.value
+      paymentMethod: paymentMethod.value,
     };
 
     // 2. ยิง API
-    await axios.post(
-      'http://localhost:3001/api/sales',
-      saleData,
-      { headers: { 'Authorization': `Bearer ${token.value}` } }
-    );
+    await axios.post("http://localhost:3001/api/sales", saleData, {
+      headers: { Authorization: `Bearer ${token.value}` },
+    });
 
     // 3. ถ้าสำเร็จ
     showPaymentModal.value = false;
     cart.value = [];
     saleError.value = null;
-    paymentMethod.value = 'transfer'; // รีเซ็ตเป็น default
+    paymentMethod.value = "transfer"; // รีเซ็ตเป็น default
 
     // แสดง Success message
     await Swal.fire({
-      icon: 'success',
-      title: 'บันทึกการขายสำเร็จ!',
-      html: `<p style="font-size: 16px;">ยอดรวม</p><h2 style="color: #10b981; font-weight: bold; font-size: 32px;">฿${finalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>`,
-      confirmButtonText: 'ตกลง',
-      confirmButtonColor: '#10b981'
+      icon: "success",
+      title: "บันทึกการขายสำเร็จ!",
+      html: `<p style="font-size: 16px;">ยอดรวม</p><h2 style="color: #10b981; font-weight: bold; font-size: 32px;">฿${finalAmount.toLocaleString(
+        "th-TH",
+        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+      )}</h2>`,
+      confirmButtonText: "ตกลง",
+      confirmButtonColor: "#10b981",
     });
 
     await fetchProducts();
-
+    await fetchRecentSales(); // อัปเดตประวัติการขายทันที
   } catch (err) {
     // ตรวจสอบ Auth Error (403, 401)
     const isAuthError = await handleApiError(err);
@@ -522,7 +694,8 @@ const cancelQRPayment = () => {
 
 <style scoped>
 * {
-  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: "Sarabun", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
 }
 
 /* Table Styles */
@@ -773,9 +946,7 @@ const cancelQRPayment = () => {
 
 /* Responsive Design */
 @media (max-width: 992px) {
-  .row.g-3 {
-    flex-direction: column-reverse;
-  }
+  /* .row.g-3 { flex-direction: column-reverse; } Removed to fix ordering */
 
   .col-lg-7,
   .col-lg-5 {
