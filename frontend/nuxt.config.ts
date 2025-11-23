@@ -32,6 +32,11 @@ export default defineNuxtConfig({
         {
           src: "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js",
           async: true
+        },
+        {
+          src: "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js",
+          integrity: "sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL",
+          crossorigin: "anonymous"
         }
       ]
     }
@@ -42,10 +47,4 @@ export default defineNuxtConfig({
       "process.env.DEBUG": false,
     },
   },
-
-  // (สำคัญ!) เพิ่มส่วนนี้กลับเข้ามา
-  // นี่คือส่วนที่บอก Nuxt ให้โหลด JS ของ Bootstrap (ผ่าน Plugin)
-  plugins: [
-    { src: '~/plugins/bootstrap.client.js', mode: 'client' }
-  ]
 });

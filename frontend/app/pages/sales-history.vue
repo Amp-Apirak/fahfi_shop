@@ -148,9 +148,7 @@
                     <button class="btn btn-sm btn-outline-primary" @click="openDetailsModal(sale.id)" title="ดูรายละเอียด">
                       <i class="fas fa-eye"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-warning" @click="openEditModal(sale.id)" title="แก้ไขบิล">
-                      <i class="fas fa-edit"></i>
-                    </button>
+                    <!-- ปุ่มแก้ไขถูกลบออกตามคำขอ -->
                     <button class="btn btn-sm btn-outline-danger" @click="handleDeleteSale(sale.id)" title="ยกเลิกบิล">
                       <i class="fas fa-trash-alt"></i>
                     </button>
@@ -164,7 +162,8 @@
     </div>
 
     <!-- Modal: Sale Details -->
-    <div class="modal fade" id="saleDetailModal" tabindex="-1" aria-hidden="true">
+    <!-- เพิ่ม ref="saleDetailModalRef" เพื่อใช้อ้างอิงใน Script -->
+    <div class="modal fade" id="saleDetailModal" ref="saleDetailModalRef" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow">
           <div class="modal-header bg-primary text-white">
@@ -231,100 +230,11 @@
       </div>
     </div>
 
-    <!-- Modal: Edit Sale -->
-    <div class="modal fade" id="editSaleModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-          <div class="modal-header bg-warning text-dark">
-            <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>แก้ไขบิล #{{ editSaleId }}</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body p-0">
-            <div v-if="editModalPending" class="text-center py-5">
-              <div class="spinner-border text-warning"></div>
-            </div>
-            <div v-else-if="editModalError" class="alert alert-danger m-3">{{ editModalError }}</div>
-            
-            <div class="row g-0" v-if="!editModalPending && !editModalError">
-              <!-- Left: Product Selection -->
-              <div class="col-lg-5 border-end bg-light">
-                <div class="p-3 border-bottom bg-white sticky-top">
-                  <h6 class="mb-0 fw-bold text-secondary"><i class="fas fa-box me-2"></i>เลือกสินค้าเพิ่ม</h6>
-                </div>
-                <div class="p-3" style="max-height: 60vh; overflow-y: auto;">
-                  <div v-for="product in allProducts" :key="product.id" 
-                       class="card mb-2 cursor-pointer product-card" 
-                       @click="addToEditCart(product)">
-                    <div class="card-body p-2 d-flex justify-content-between align-items-center">
-                      <div>
-                        <div class="fw-bold text-dark">{{ product.name }}</div>
-                        <small class="text-muted">สต็อก: {{ product.stock_quantity }}</small>
-                      </div>
-                      <span class="badge bg-primary rounded-pill">฿{{ product.sell_price }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Right: Cart -->
-              <div class="col-lg-7 bg-white">
-                <div class="p-3 border-bottom bg-white sticky-top d-flex justify-content-between align-items-center">
-                  <h6 class="mb-0 fw-bold text-secondary"><i class="fas fa-shopping-cart me-2"></i>รายการในบิล</h6>
-                  <span class="badge bg-warning text-dark">กำลังแก้ไข</span>
-                </div>
-                <div class="p-3" style="max-height: 50vh; overflow-y: auto;">
-                  <div v-if="editCart.length === 0" class="text-center py-5 text-muted">
-                    <i class="fas fa-shopping-basket fa-3x mb-3 opacity-25"></i>
-                    <p>ไม่มีสินค้าในรายการ</p>
-                  </div>
-                  <div v-else v-for="(item, index) in editCart" :key="index" class="card mb-2 border-start-0 border-end-0 border-top-0 rounded-0">
-                    <div class="card-body p-2">
-                      <div class="d-flex justify-content-between mb-2">
-                        <span class="fw-bold">{{ item.name }}</span>
-                        <button class="btn btn-sm text-danger p-0" @click="removeFromEditCart(index)">
-                          <i class="fas fa-times"></i>
-                        </button>
-                      </div>
-                      <div class="row g-2 align-items-center">
-                        <div class="col-auto">
-                          <label class="small text-muted">จำนวน:</label>
-                          <input type="number" class="form-control form-control-sm" v-model.number="item.quantity" style="width: 70px;" min="1">
-                        </div>
-                        <div class="col-auto">
-                          <label class="small text-muted">ราคา/ชิ้น:</label>
-                          <input type="number" class="form-control form-control-sm" v-model.number="item.sell_price" style="width: 90px;" disabled>
-                        </div>
-                        <div class="col text-end">
-                          <span class="fw-bold text-success">฿{{ (item.sell_price * item.quantity).toLocaleString() }}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="p-3 bg-light border-top">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <span class="fw-bold">ยอดรวมใหม่:</span>
-                    <h4 class="fw-bold text-success mb-0">฿{{ editTotalAmount.toLocaleString() }}</h4>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer bg-light">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-            <button type="button" class="btn btn-warning fw-bold" @click="submitEditSale">
-              <i class="fas fa-save me-2"></i>บันทึกการแก้ไข
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, computed } from "vue";
 import axios from "axios";
 
 definePageMeta({
@@ -363,12 +273,7 @@ const avgOrderValue = computed(() => {
 const modalPending = ref(false);
 const modalError = ref(null);
 const selectedSale = ref({});
-
-const editModalPending = ref(false);
-const editModalError = ref(null);
-const editSaleId = ref(null);
-const allProducts = ref([]);
-const editCart = ref([]);
+const saleDetailModalRef = ref(null); // Ref สำหรับ Modal Element
 
 // Fetch Data
 const fetchSalesHistory = async () => {
@@ -407,9 +312,21 @@ onMounted(() => {
 
 // Actions
 const openDetailsModal = async (saleId) => {
-  const modal = new window.bootstrap.Modal(document.getElementById('saleDetailModal'));
-  modal.show();
-  
+  // ตรวจสอบว่ามี Bootstrap หรือไม่
+  if (!window.bootstrap) {
+    console.error("Bootstrap is not loaded!");
+    alert("ระบบยังโหลดไม่สมบูรณ์ กรุณารีเฟรชหน้าเว็บ");
+    return;
+  }
+
+  // เปิด Modal
+  // ใช้ saleDetailModalRef.value แทน document.getElementById เพื่อความชัวร์ใน Vue
+  const modalElement = saleDetailModalRef.value;
+  if (modalElement) {
+    const modal = new window.bootstrap.Modal(modalElement);
+    modal.show();
+  }
+
   modalPending.value = true;
   modalError.value = null;
   selectedSale.value = {};
@@ -439,103 +356,9 @@ const handleDeleteSale = async (saleId) => {
     alert(`เกิดข้อผิดพลาด: ${err.response ? err.response.data.message : err.message}`);
   }
 };
-
-// Edit Logic
-const editTotalAmount = computed(() => {
-  return editCart.value.reduce((total, item) => {
-    return total + (item.sell_price * item.quantity);
-  }, 0);
-});
-
-const openEditModal = async (saleId) => {
-  const modal = new window.bootstrap.Modal(document.getElementById('editSaleModal'));
-  modal.show();
-
-  editModalPending.value = true;
-  editModalError.value = null;
-  editSaleId.value = saleId;
-  editCart.value = [];
-  allProducts.value = [];
-
-  try {
-    const [productsRes, saleRes] = await Promise.all([
-      axios.get("http://localhost:3001/api/products", { headers: { Authorization: `Bearer ${token.value}` } }),
-      axios.get(`http://localhost:3001/api/sales/${saleId}`, { headers: { Authorization: `Bearer ${token.value}` } })
-    ]);
-
-    allProducts.value = productsRes.data;
-    
-    // Map existing items
-    editCart.value = saleRes.data.saleDetails.map((item) => {
-      const product = allProducts.value.find((p) => p.id === item.product_id);
-      return {
-        product_id: item.product_id,
-        quantity: item.quantity,
-        discount_amount: item.discount_amount,
-        name: product ? product.name : "สินค้าถูกลบ",
-        sell_price: item.price_at_sale,
-        stock: product ? product.stock_quantity : 0,
-      };
-    });
-  } catch (err) {
-    editModalError.value = err.response ? err.response.data.message : err.message;
-  } finally {
-    editModalPending.value = false;
-  }
-};
-
-const addToEditCart = (product) => {
-  const existingItem = editCart.value.find((item) => item.product_id === product.id);
-  if (existingItem) {
-    existingItem.quantity++;
-  } else {
-    editCart.value.push({
-      product_id: product.id,
-      quantity: 1,
-      discount_amount: 0,
-      name: product.name,
-      sell_price: product.sell_price,
-      stock: product.stock_quantity,
-    });
-  }
-};
-
-const removeFromEditCart = (index) => {
-  editCart.value.splice(index, 1);
-};
-
-const submitEditSale = async () => {
-  if (!confirm("ยืนยันการแก้ไขบิล?")) return;
-  
-  try {
-    const saleData = {
-      newCart: editCart.value.map((item) => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-        discount_amount: item.discount_amount,
-      })),
-      newTotalAmount: editTotalAmount.value,
-    };
-
-    const response = await axios.put(`http://localhost:3001/api/sales/${editSaleId.value}`, saleData, {
-      headers: { Authorization: `Bearer ${token.value}` }
-    });
-
-    alert(response.data.message);
-    const modal = window.bootstrap.Modal.getInstance(document.getElementById('editSaleModal'));
-    modal.hide();
-    fetchSalesHistory();
-  } catch (err) {
-    editModalError.value = `เกิดข้อผิดพลาด: ${err.response ? err.response.data.message : err.message}`;
-  }
-};
 </script>
 
 <style scoped>
-.product-card:hover {
-  background-color: #f8f9fa;
-  border-color: #0d6efd;
-}
 .cursor-pointer {
   cursor: pointer;
 }
