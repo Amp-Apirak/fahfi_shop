@@ -236,6 +236,7 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import axios from "axios";
+import Swal from "sweetalert2";
 
 definePageMeta({
   layout: "default",
@@ -344,16 +345,37 @@ const openDetailsModal = async (saleId) => {
 };
 
 const handleDeleteSale = async (saleId) => {
-  if (!window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการ "ยกเลิกบิล ID: ${saleId}"?\n(การกระทำนี้จะคืนสต็อกสินค้ากลับเข้าระบบ)`)) return;
+  const result = await Swal.fire({
+    title: 'คุณแน่ใจหรือไม่?',
+    text: `ต้องการยกเลิกบิล ID: ${saleId}? (การกระทำนี้จะคืนสต็อกสินค้ากลับเข้าระบบ)`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'ใช่, ยกเลิกบิล!',
+    cancelButtonText: 'ยกเลิก'
+  });
+
+  if (!result.isConfirmed) return;
   
   try {
     const response = await axios.delete(`http://localhost:3001/api/sales/${saleId}`, {
       headers: { Authorization: `Bearer ${token.value}` }
     });
-    alert(response.data.message);
+    
+    await Swal.fire(
+      'เรียบร้อย!',
+      response.data.message,
+      'success'
+    );
+    
     fetchSalesHistory();
   } catch (err) {
-    alert(`เกิดข้อผิดพลาด: ${err.response ? err.response.data.message : err.message}`);
+    Swal.fire(
+      'เกิดข้อผิดพลาด!',
+      err.response ? err.response.data.message : err.message,
+      'error'
+    );
   }
 };
 </script>
