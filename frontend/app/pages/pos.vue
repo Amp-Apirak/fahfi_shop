@@ -42,16 +42,14 @@
                     <th class="text-center" style="width: 80px">ID</th>
                     <th class="text-center" style="width: 100px">รูปภาพ</th>
                     <th>ชื่อสินค้า</th>
-                    <th>รายละเอียด</th>
                     <th class="text-center">หมวดหมู่</th>
                     <th class="text-end">ราคาขาย</th>
                     <th class="text-center">สต็อก</th>
-                    <th class="text-center" style="width: 80px">การจัดการ</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-if="!products || products.length === 0">
-                    <td colspan="8" class="text-center text-muted py-4">
+                    <td colspan="6" class="text-center text-muted py-4">
                       ไม่พบข้อมูลสินค้า
                     </td>
                   </tr>
@@ -78,7 +76,7 @@
                           :src="product.product_image_url"
                           :alt="product.name"
                           class="product-thumbnail"
-                          onerror="this.src='https://via.placeholder.com/80?text=No+Image'"
+                          onerror="this.onerror=null; this.src='https://via.placeholder.com/80?text=No+Image'"
                         />
                       </div>
                       <div v-else class="product-image-placeholder">
@@ -87,16 +85,6 @@
                     </td>
                     <td>
                       <h6 class="mb-0 fw-bold">{{ product.name }}</h6>
-                    </td>
-                    <td>
-                      <small
-                        v-if="product.details"
-                        class="text-muted d-block"
-                        >{{ product.details }}</small
-                      >
-                      <small v-else class="text-muted fst-italic"
-                        >ไม่มีรายละเอียด</small
-                      >
                     </td>
                     <td class="text-center">
                       <span
@@ -126,16 +114,6 @@
                       >
                         {{ product.stock_quantity }}
                       </span>
-                    </td>
-                    <td class="text-center" @click.stop>
-                      <button
-                        class="btn btn-sm btn-outline-primary border-0 action-btn"
-                        title="เพิ่มลงตะกร้า"
-                        @click="addToCart(product)"
-                        :disabled="product.stock_quantity <= 0"
-                      >
-                        <i class="fas fa-plus"></i>
-                      </button>
                     </td>
                   </tr>
                 </tbody>
@@ -214,27 +192,17 @@
                         </button>
                       </div>
 
-                      <div class="row g-2 align-items-end">
-                        <div class="col-6">
-                          <label class="form-label small mb-1">จำนวน</label>
+                        <div class="d-flex align-items-center gap-2 mt-2">
+                          <label class="form-label small mb-0 text-nowrap">จำนวน:</label>
                           <input
                             type="number"
                             class="form-control form-control-sm"
+                            style="width: 100px;"
                             v-model.number="item.quantity"
                             min="1"
                             @change="updateQuantity(item)"
                           />
                         </div>
-                        <div class="col-6">
-                          <label class="form-label small mb-1">ส่วนลด</label>
-                          <input
-                            type="number"
-                            class="form-control form-control-sm"
-                            v-model.number="item.discount_amount"
-                            min="0"
-                          />
-                        </div>
-                      </div>
 
                       <div class="mt-2 pt-2 border-top">
                         <div class="d-flex justify-content-between">
@@ -261,7 +229,7 @@
                 <span>จำนวนรายการ:</span>
                 <span class="fw-bold">{{ cart.length }}</span>
               </div>
-              <div class="d-flex justify-content-between mb-3">
+              <div class="d-flex justify-content-between mb-2">
                 <span class="h5 mb-0">ยอดรวมสุทธิ:</span>
                 <span class="h5 mb-0 text-success fw-bold">
                   ฿{{
@@ -271,6 +239,22 @@
                     })
                   }}
                 </span>
+              </div>
+
+              <!-- Global Discount Section -->
+              <div class="mb-3 border-top pt-2">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="small fw-bold">ส่วนลดท้ายบิล:</span>
+                  <div class="input-group input-group-sm" style="width: 150px;">
+                    <span class="input-group-text">฿</span>
+                    <input type="number" class="form-control text-end" v-model.number="globalDiscount" min="0">
+                  </div>
+                </div>
+                <div class="d-flex justify-content-end gap-1">
+                  <button class="btn btn-sm btn-outline-secondary" @click="applyGlobalDiscount(3)">3%</button>
+                  <button class="btn btn-sm btn-outline-secondary" @click="applyGlobalDiscount(7)">7%</button>
+                  <button class="btn btn-sm btn-outline-secondary" @click="applyGlobalDiscount(10)">10%</button>
+                </div>
               </div>
 
               <!-- Payment Method Selection -->
@@ -336,8 +320,9 @@
             </div>
           </div>
         </div>
+      </div>
 
-        </div>
+
 
 
       <!-- 3. ประวัติการขายล่าสุด -->
@@ -397,6 +382,9 @@
                   <div class="fw-bold text-success">
                     ฿{{ sale.total_amount.toLocaleString("th-TH") }}
                   </div>
+                  <small v-if="sale.discount > 0" class="d-block text-danger" style="font-size: 0.75rem;">
+                    (ส่วนลด: ฿{{ Number(sale.discount).toLocaleString("th-TH") }})
+                  </small>
                   <small class="text-muted">{{
                     new Date(sale.sale_date).toLocaleDateString("th-TH")
                   }}</small>
@@ -501,6 +489,7 @@ const error = ref(null);
 
 // 3. State สำหรับ "ตะกร้าสินค้า" (ฝั่งขวา)
 const cart = ref([]); // นี่คือหัวใจของหน้านี้
+const globalDiscount = ref(0); // ส่วนลดท้ายบิล
 const isSubmitting = ref(false); // สถานะกำลังบันทึก
 const saleError = ref(null);
 
@@ -576,7 +565,6 @@ const addToCart = (product) => {
       name: product.name,
       sell_price: product.sell_price,
       quantity: 1,
-      discount_amount: 0,
       stock: product.stock_quantity,
     });
   }
@@ -604,16 +592,24 @@ const updateQuantity = (item) => {
   }
 };
 
+// ฟังก์ชันคำนวณส่วนลดท้ายบิล
+const applyGlobalDiscount = (percent) => {
+  const subtotal = cart.value.reduce((sum, item) => sum + (item.sell_price * item.quantity), 0);
+  const discount = subtotal * (percent / 100);
+  globalDiscount.value = parseFloat(discount.toFixed(2));
+};
+
 // ฟังก์ชันคำนวณรวมต่อรายการ
 const getLineTotal = (item) => {
-  return item.sell_price * item.quantity - item.discount_amount;
+  return item.sell_price * item.quantity;
 };
 
 // 6. (สำคัญ) การคำนวณยอดรวม (Computed Property)
 const totalAmount = computed(() => {
-  return cart.value.reduce((total, item) => {
+  const subtotal = cart.value.reduce((total, item) => {
     return total + getLineTotal(item);
   }, 0);
+  return Math.max(0, subtotal - globalDiscount.value);
 });
 
 // 7. ฟังก์ชัน "ยืนยันการขาย" (Submit)
@@ -642,9 +638,9 @@ const confirmPayment = async () => {
       cart: cart.value.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity,
-        discount_amount: item.discount_amount,
       })),
       totalAmount: finalAmount,
+      globalDiscount: globalDiscount.value,
       paymentMethod: paymentMethod.value,
     };
 
@@ -656,6 +652,7 @@ const confirmPayment = async () => {
     // 3. ถ้าสำเร็จ
     showPaymentModal.value = false;
     cart.value = [];
+    globalDiscount.value = 0; // รีเซ็ตส่วนลด
     saleError.value = null;
     paymentMethod.value = "transfer"; // รีเซ็ตเป็น default
 

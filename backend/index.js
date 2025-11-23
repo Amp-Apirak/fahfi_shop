@@ -843,111 +843,115 @@ app.post('/api/sales', authenticateToken, express.json(), async (req, res) => {
   // ดึงข้อมูลผู้ใช้ที่กำลังขาย (จาก Token)
   const { userId, username } = req.user;
 
-  // 1. รับ "ตะกร้าสินค้า" (Cart) และยอดรวม
-  // เราคาดหวังว่า Frontend จะส่ง "cart" (Array) และ "totalAmount" (ยอดสุทธิที่คำนวณแล้ว) มา
-  const { cart, totalAmount } = req.body;
+  // 1. รับข้อมูลจาก Frontend
+  const { cart, paymentMethod, globalDiscount } = req.body; // รับ globalDiscount มาด้วย
 
-  // 2. ตรวจสอบข้อมูลเบื้องต้น
-  if (!cart || cart.length === 0 || totalAmount === undefined) {
-    return res.status(400).json({ message: "ข้อมูลตะกร้าสินค้าไม่ถูกต้อง" });
+  if (!cart || cart.length === 0) {
+    return res.status(400).json({ message: "ตะกร้าสินค้าว่างเปล่า" });
   }
 
   // (สำคัญ) เราจะใช้ Connection แบบพิเศษสำหรับ Transaction
   let connection;
   try {
-    // 3. (สำคัญ) ดึง Connection มาจาก Pool เพื่อเริ่ม Transaction
+    // 2. (สำคัญ) ดึง Connection มาจาก Pool เพื่อเริ่ม Transaction
     connection = await db.promise().getConnection();
 
-    // 4. (สำคัญ) เริ่ม Transaction
+    // 3. (สำคัญ) เริ่ม Transaction
     await connection.beginTransaction();
     console.log("Transaction Started.");
 
-    // --- ขั้นตอนที่ 5: ตรวจสอบสต็อก (Pre-check) ---
-    // เราต้องเช็คก่อนว่าของพอขายไหม (ป้องกันสต็อกติดลบ)
+    let calculatedTotal = 0;
+    let saleDetails = [];
+
+    // 4. ตรวจสอบสต็อกและคำนวณราคา
     for (const item of cart) {
       const [products] = await connection.query(
-        "SELECT name, stock_quantity FROM products WHERE id = ? FOR UPDATE", // "FOR UPDATE" ล็อคแถวนี้ไว้ก่อน
+        "SELECT name, sell_price, stock_quantity FROM products WHERE id = ? FOR UPDATE",
         [item.product_id]
       );
+
       if (products.length === 0) {
         throw new Error(`ไม่พบสินค้า ID: ${item.product_id}`);
       }
-      if (products[0].stock_quantity < item.quantity) {
+
+      const product = products[0];
+
+      if (product.stock_quantity < item.quantity) {
         throw new Error(
-          `สต็อกสินค้า "${products[0].name}" ไม่เพียงพอ (มี ${products[0].stock_quantity} ชิ้น)`
+          `สินค้า "${product.name}" มีไม่พอ (เหลือ ${product.stock_quantity} ชิ้น)`
         );
       }
+
+      // คำนวณราคารายการ (Line Total)
+      // หมายเหตุ: เรายกเลิกส่วนลดรายชิ้นแล้ว ดังนั้น discount_amount ของรายการจะเป็น 0
+      const lineTotal = product.sell_price * item.quantity; 
+      calculatedTotal += lineTotal;
+
+      saleDetails.push({
+        product_id: item.product_id,
+        name: product.name,
+        quantity: item.quantity,
+        price_at_sale: product.sell_price,
+        line_total: lineTotal,
+      });
     }
 
-    // --- ขั้นตอนที่ 6: บันทึกหัวบิล (sales) ---
+    // หักส่วนลดท้ายบิล (Global Discount)
+    const finalDiscount = globalDiscount || 0;
+    const netTotal = calculatedTotal - finalDiscount;
+
+    // 5. สร้าง "หัวบิล" (Sales)
+    // (ต้องแน่ใจว่ามีคอลัมน์ discount ใน DB แล้ว)
     const [saleResult] = await connection.query(
-      "INSERT INTO sales (total_amount, created_by, last_updated_by) VALUES (?, ?, ?)",
-      [totalAmount, userId, userId]
+      "INSERT INTO sales (total_amount, discount, created_by, last_updated_by) VALUES (?, ?, ?, ?)",
+      [netTotal, finalDiscount, userId, userId]
     );
-    const newSaleId = saleResult.insertId;
-    console.log(`Sale Header created (ID: ${newSaleId})`);
 
-    // --- ขั้นตอนที่ 7: บันทึกรายละเอียดบิล (sale_details) และตัดสต็อก ---
-    let logDetails = []; // สำหรับเก็บ Log
+    const saleId = saleResult.insertId;
 
-    for (const item of cart) {
-      // 7a. ดึงราคาขายจริงจาก DB (เพื่อความปลอดภัย)
-      const [products] = await connection.query(
-        "SELECT sell_price FROM products WHERE id = ?",
-        [item.product_id]
-      );
-      const priceAtSale = products[0].sell_price;
-
-      // 7b. คำนวณยอดรวมต่อรายการ
-      const lineTotal =
-        priceAtSale * item.quantity - (item.discount_amount || 0);
-
-      // 7c. บันทึกลง sale_details
+    // 6. บันทึก "รายละเอียดบิล" (Sale Details) และ "ตัดสต็อก"
+    for (const detail of saleDetails) {
       await connection.query(
         "INSERT INTO sale_details (sale_id, product_id, quantity, price_at_sale, discount_amount, line_total) VALUES (?, ?, ?, ?, ?, ?)",
         [
-          newSaleId,
-          item.product_id,
-          item.quantity,
-          priceAtSale,
-          item.discount_amount || 0,
-          lineTotal,
+          saleId,
+          detail.product_id,
+          detail.quantity,
+          detail.price_at_sale,
+          0, // ส่วนลดรายชิ้นเป็น 0
+          detail.line_total,
         ]
       );
 
-      // 7d. (สำคัญ) ตัดสต็อกสินค้า
+      // ตัดสต็อก
       await connection.query(
         "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?",
-        [item.quantity, item.product_id]
+        [detail.quantity, detail.product_id]
       );
-
-      logDetails.push(`(ID ${item.product_id}: ${item.quantity} ชิ้น)`);
     }
-    console.log("Sale Details saved and Stock updated.");
 
-    // --- ขั้นตอนที่ 8: บันทึก Log การกระทำ ---
+    // 7. บันทึก Log
+    const itemNames = saleDetails.map((d) => `${d.name} (x${d.quantity})`).join(", ");
     await connection.query(
       "INSERT INTO action_logs (user_id, action_type, target_table, target_id, details) VALUES (?, ?, ?, ?, ?)",
       [
         userId,
         "CREATE_SALE",
         "sales",
-        newSaleId,
-        `User ${username} created Sale ID: ${newSaleId}. Items: ${logDetails.join(
-          ", "
-        )}`,
+        saleId,
+        `User ${username} created Sale ID: ${saleId}. Items: ${itemNames}. Total: ${netTotal} (Discount: ${finalDiscount})`,
       ]
     );
-    console.log("Action Logged.");
 
-    // 9. (สำคัญ) ยืนยัน Transaction (ถ้าทุกอย่างสำเร็จ)
+    // 8. (สำคัญ) ยืนยัน Transaction
     await connection.commit();
     console.log("Transaction Committed.");
 
-    // 10. ส่งคำตอบกลับไป
-    res.status(201).json({ message: "บันทึกการขายสำเร็จ!", saleId: newSaleId });
+    // 9. ส่งคำตอบกลับไป
+    res.status(201).json({ message: "บันทึกการขายสำเร็จ!", saleId: saleId });
+
   } catch (error) {
-    // 11. (สำคัญ) หากเกิดข้อผิดพลาดใดๆ ให้ Rollback
+    // 10. (สำคัญ) หากเกิดข้อผิดพลาดใดๆ ให้ Rollback
     if (connection) {
       await connection.rollback();
       console.error("Transaction Rolled Back.");
@@ -955,7 +959,7 @@ app.post('/api/sales', authenticateToken, express.json(), async (req, res) => {
     console.error("❌ Error during sale transaction:", error.message);
     res.status(500).json({ message: "เกิดข้อผิดพลาด: " + error.message });
   } finally {
-    // 12. (สำคัญ) คืน Connection กลับสู่ Pool เสมอ
+    // 11. (สำคัญ) คืน Connection กลับสู่ Pool เสมอ
     if (connection) {
       connection.release();
       console.log("Connection Released.");
@@ -970,7 +974,7 @@ app.get("/api/sales/recent", authenticateToken, async (req, res) => {
   try {
     const [sales] = await db.promise().query(
       `SELECT 
-        s.id, s.sale_date, s.total_amount, s.created_by,
+        s.id, s.sale_date, s.total_amount, s.discount, s.created_by,
         u.username AS created_by_username,
         GROUP_CONCAT(p.name SEPARATOR ', ') AS product_names
       FROM sales s
@@ -997,14 +1001,36 @@ app.get("/api/sales", authenticateToken, async (req, res) => {
   try {
     // 1. ดึงข้อมูล "หัวบิล" ทั้งหมด
     // เรา Join ตาราง users เพื่อดึง "ชื่อ" ผู้ขาย (created_by) มาแสดงผลด้วย
-    const [sales] = await db.promise().query(
-      `SELECT 
-                s.*, 
-                u.username AS created_by_username 
-            FROM sales s
-            LEFT JOIN users u ON s.created_by = u.id
-            ORDER BY s.sale_date DESC` // เรียงจากบิลล่าสุดไปเก่าสุด
-    );
+    const { startDate, endDate, search } = req.query;
+
+    let sql = `
+      SELECT 
+        s.*, 
+        u.username AS created_by_username 
+      FROM sales s
+      LEFT JOIN users u ON s.created_by = u.id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (startDate) {
+      sql += ` AND DATE(s.sale_date) >= ?`;
+      params.push(startDate);
+    }
+
+    if (endDate) {
+      sql += ` AND DATE(s.sale_date) <= ?`;
+      params.push(endDate);
+    }
+
+    if (search) {
+      sql += ` AND (s.id LIKE ? OR u.username LIKE ?)`;
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    sql += ` ORDER BY s.sale_date DESC`;
+
+    const [sales] = await db.promise().query(sql, params);
 
     // 2. ส่งข้อมูลกลับไป
     res.status(200).json(sales);
