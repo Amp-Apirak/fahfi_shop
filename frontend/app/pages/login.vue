@@ -230,18 +230,19 @@ const handleLogin = async () => {
 
 .brand-subtitle {
   margin: 5px 0 0;
-  color: var(--text-muted);
+  color: #e2e8f0; /* Lighter text */
   font-size: 14px;
   font-weight: 300;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 /* Glass Card */
 .card-glass {
   width: 100%;
-  background: var(--glass-bg);
+  background: rgba(15, 23, 42, 0.6); /* Darker semi-transparent bg for better contrast */
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 24px;
   padding: 40px 30px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
@@ -257,12 +258,13 @@ const handleLogin = async () => {
   font-size: 24px;
   font-weight: 600;
   margin: 0 0 8px;
-  color: white;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .card-header p {
   font-size: 14px;
-  color: var(--text-muted);
+  color: #cbd5e1; /* Lighter text */
   margin: 0;
 }
 
@@ -282,8 +284,9 @@ const handleLogin = async () => {
 .input-group label {
   font-size: 14px;
   font-weight: 500;
-  color: #cbd5e1;
+  color: #ffffff; /* Pure white for labels */
   margin-left: 4px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 .input-wrapper {
@@ -295,19 +298,20 @@ const handleLogin = async () => {
 .input-icon {
   position: absolute;
   left: 16px;
-  color: var(--text-muted);
+  color: #94a3b8;
   font-size: 14px;
   pointer-events: none;
   transition: color 0.3s ease;
+  z-index: 10;
 }
 
 .input-wrapper input {
   width: 100%;
   padding: 14px 16px 14px 45px;
-  background: var(--input-bg);
-  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.4); /* Darker input bg */
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 16px;
-  color: white;
+  color: #ffffff; /* White text input */
   font-size: 15px;
   transition: all 0.3s ease;
 }
@@ -315,7 +319,7 @@ const handleLogin = async () => {
 .input-wrapper input:focus {
   outline: none;
   border-color: var(--secondary-color);
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(0, 0, 0, 0.6);
   box-shadow: 0 0 0 4px rgba(124, 77, 255, 0.15);
 }
 
@@ -324,7 +328,8 @@ const handleLogin = async () => {
 }
 
 .input-wrapper input::placeholder {
-  color: #475569;
+  color: #94a3b8; /* Lighter placeholder */
+  opacity: 1;
 }
 
 /* Error Message */
