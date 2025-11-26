@@ -1,56 +1,71 @@
 <template>
-  <div class="login-page">
-    <div class="bg-shape shape-1"></div>
-    <div class="bg-shape shape-2"></div>
-    <div class="bg-shape shape-3"></div>
+  <div class="login-container">
+    <!-- Background Elements -->
+    <div class="bg-overlay"></div>
+    <div class="decorative-circle circle-1"></div>
+    <div class="decorative-circle circle-2"></div>
 
-    <div class="login-card shadow-lg">
-      <div class="brand">
-        <div class="logo-circle">
-          <span class="logo-text">FS</span>
+    <div class="login-content">
+      <div class="brand-section">
+        <div class="logo-wrapper">
+          <span class="logo-icon">FS</span>
         </div>
-        <div>
-          <p class="brand-top">Fahfi Shop</p>
-          <p class="brand-sub">POS | Fashion & Lifestyle</p>
-        </div>
+        <h1 class="brand-title">FAHFI SHOP</h1>
+        <p class="brand-subtitle">Fashion & Lifestyle POS System</p>
       </div>
 
-      <div class="headline">
-        <h1>เข้าสู่ระบบ</h1>
-        <p>แดชบอร์ดจัดการหน้าร้าน ครบทุกออเดอร์</p>
+      <div class="card-glass">
+        <div class="card-header">
+          <h2>ยินดีต้อนรับ</h2>
+          <p>เข้าสู่ระบบเพื่อจัดการร้านค้าของคุณ</p>
+        </div>
+
+        <form @submit.prevent="handleLogin" class="login-form">
+          <div class="input-group">
+            <label for="username">ชื่อผู้ใช้งาน</label>
+            <div class="input-wrapper">
+              <i class="fas fa-user input-icon"></i>
+              <input
+                id="username"
+                type="text"
+                v-model="username"
+                placeholder="Username"
+                autocomplete="username"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="password">รหัสผ่าน</label>
+            <div class="input-wrapper">
+              <i class="fas fa-lock input-icon"></i>
+              <input
+                id="password"
+                type="password"
+                v-model="password"
+                placeholder="Password"
+                autocomplete="current-password"
+                required
+              />
+            </div>
+          </div>
+
+          <div v-if="errorMessage" class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ errorMessage }}
+          </div>
+
+          <button type="submit" class="btn-submit">
+            <span>เข้าสู่ระบบ</span>
+            <i class="fas fa-arrow-right"></i>
+          </button>
+        </form>
       </div>
-
-      <form class="login-form" @submit.prevent="handleLogin">
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input
-            id="username"
-            type="text"
-            v-model="username"
-            placeholder="ระบุชื่อผู้ใช้"
-            autocomplete="username"
-            required
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            v-model="password"
-            placeholder="รหัสผ่าน"
-            autocomplete="current-password"
-            required
-          />
-        </div>
-
-        <div v-if="errorMessage" class="error-box">
-          {{ errorMessage }}
-        </div>
-
-        <button type="submit" class="btn-login">เข้าสู่ระบบ</button>
-      </form>
+      
+      <div class="footer-text">
+        &copy; {{ new Date().getFullYear() }} FAHFI SHOP. All rights reserved.
+      </div>
     </div>
   </div>
 </template>
@@ -70,6 +85,7 @@ const errorMessage = ref(null);
 const { login } = useAuth();
 
 const handleLogin = async () => {
+  errorMessage.value = null; // Reset error
   try {
     const response = await axios.post("/api/login", {
       username: username.value,
@@ -80,219 +96,312 @@ const handleLogin = async () => {
     window.location.href = "/";
   } catch (error) {
     console.error("Login failed:", error);
-    errorMessage.value = "Username หรือ Password ไม่ถูกต้อง";
+    errorMessage.value = "ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง";
   }
 };
 </script>
 
-<style>
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Sarabun:wght@300;400;500;700&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+
 :root {
-  --bg: #0c0f1a;
-  --card: rgba(255, 255, 255, 0.9);
-  --accent: #4060ff;
-  --accent-2: #f24b88;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --danger: #ef4444;
-  --shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  --radius: 18px;
-  --font: "Sarabun", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --primary-color: #ff4081; /* Pink */
+  --secondary-color: #7c4dff; /* Violet */
+  --bg-dark: #0f172a;
+  --text-light: #f8fafc;
+  --text-muted: #94a3b8;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --input-bg: rgba(15, 23, 42, 0.6);
 }
 
-* {
-  box-sizing: border-box;
-  font-family: var(--font);
-}
-
-body {
-  margin: 0;
-  background: var(--bg);
-}
-
-.login-page {
-  position: relative;
+.login-container {
   min-height: 100vh;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px;
+  background-color: var(--bg-dark);
+  position: relative;
   overflow: hidden;
-  background: radial-gradient(circle at 20% 20%, #182447 0, #0c0f1a 45%),
-    radial-gradient(circle at 80% 0%, #171f37 0, #0c0f1a 45%);
+  font-family: 'Sarabun', sans-serif;
+  color: var(--text-light);
 }
 
-.bg-shape {
+/* Background Effects */
+.bg-overlay {
   position: absolute;
-  filter: blur(70px);
-  opacity: 0.5;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
   z-index: 0;
 }
 
-.shape-1 {
-  width: 380px;
-  height: 380px;
-  background: #4060ff;
-  top: 5%;
-  left: 10%;
+.decorative-circle {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.6;
+  z-index: 0;
+  animation: float 10s infinite ease-in-out;
 }
 
-.shape-2 {
-  width: 420px;
-  height: 420px;
-  background: #f24b88;
-  bottom: 0%;
-  right: 5%;
+.circle-1 {
+  width: 400px;
+  height: 400px;
+  background: var(--primary-color);
+  top: -100px;
+  left: -100px;
+  animation-delay: 0s;
 }
 
-.shape-3 {
-  width: 260px;
-  height: 260px;
-  background: #22d3ee;
-  top: 45%;
-  left: 60%;
+.circle-2 {
+  width: 300px;
+  height: 300px;
+  background: var(--secondary-color);
+  bottom: -50px;
+  right: -50px;
+  animation-delay: 5s;
 }
 
-.login-card {
+@keyframes float {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(20px, 40px); }
+}
+
+/* Content Layout */
+.login-content {
   position: relative;
-  z-index: 1;
-  width: min(420px, 100%);
-  background: var(--card);
-  border-radius: var(--radius);
-  padding: 32px;
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  z-index: 10;
+  width: 100%;
+  max-width: 450px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
 }
 
-.brand {
+/* Brand Section */
+.brand-section {
+  text-align: center;
+  animation: slideDown 0.8s ease-out;
+}
+
+.logo-wrapper {
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  border-radius: 20px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 20px;
+  justify-content: center;
+  margin: 0 auto 15px;
+  box-shadow: 0 10px 25px rgba(124, 77, 255, 0.4);
+  transform: rotate(-5deg);
+  transition: transform 0.3s ease;
 }
 
-.logo-circle {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  display: grid;
-  place-items: center;
-  color: #fff;
+.logo-wrapper:hover {
+  transform: rotate(0deg) scale(1.05);
+}
+
+.logo-icon {
+  font-family: 'Outfit', sans-serif;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  font-size: 28px;
+  color: white;
 }
 
-.logo-text {
-  font-size: 16px;
-}
-
-.brand-top {
+.brand-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
   margin: 0;
-  font-weight: 700;
-  color: var(--text);
-  font-size: 16px;
+  background: linear-gradient(to right, #fff, #cbd5e1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 1px;
 }
 
-.brand-sub {
-  margin: 2px 0 0;
-  color: var(--muted);
-  font-size: 13px;
+.brand-subtitle {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 300;
 }
 
-.headline h1 {
-  margin: 6px 0 4px;
-  color: var(--text);
+/* Glass Card */
+.card-glass {
+  width: 100%;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 40px 30px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: fadeIn 1s ease-out;
+}
+
+.card-header {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.card-header h2 {
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: white;
 }
 
-.headline p {
+.card-header p {
+  font-size: 14px;
+  color: var(--text-muted);
   margin: 0;
-  color: var(--muted);
-  font-size: 14px;
 }
 
+/* Form Styles */
 .login-form {
-  margin-top: 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
-.form-group {
+.input-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
-.form-group label {
-  color: var(--text);
-  font-weight: 600;
+.input-group label {
   font-size: 14px;
+  font-weight: 500;
+  color: #cbd5e1;
+  margin-left: 4px;
 }
 
-.form-group input {
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  background: #f8fafc;
-  color: var(--text);
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 16px;
+  color: var(--text-muted);
   font-size: 14px;
-  transition: all 0.2s ease;
+  pointer-events: none;
+  transition: color 0.3s ease;
 }
 
-.form-group input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(64, 96, 255, 0.15);
-  background: #fff;
-}
-
-.error-box {
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--danger);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.btn-login {
-  margin-top: 4px;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: #fff;
-  font-weight: 700;
+.input-wrapper input {
+  width: 100%;
+  padding: 14px 16px 14px 45px;
+  background: var(--input-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  color: white;
   font-size: 15px;
+  transition: all 0.3s ease;
+}
+
+.input-wrapper input:focus {
+  outline: none;
+  border-color: var(--secondary-color);
+  background: rgba(15, 23, 42, 0.8);
+  box-shadow: 0 0 0 4px rgba(124, 77, 255, 0.15);
+}
+
+.input-wrapper input:focus + .input-icon {
+  color: var(--secondary-color);
+}
+
+.input-wrapper input::placeholder {
+  color: #475569;
+}
+
+/* Error Message */
+.error-message {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Button */
+.btn-submit {
+  margin-top: 10px;
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+  border: none;
+  border-radius: 16px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 14px 40px rgba(64, 96, 255, 0.25);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 20px rgba(124, 77, 255, 0.3);
 }
 
-.btn-login:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 18px 50px rgba(64, 96, 255, 0.32);
+.btn-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px rgba(124, 77, 255, 0.4);
 }
 
-.btn-login:active {
+.btn-submit:active {
   transform: translateY(0);
 }
 
-@media (max-width: 640px) {
-  .login-card {
-    padding: 26px 22px;
-  }
+/* Footer */
+.footer-text {
+  color: #475569;
+  font-size: 12px;
+  margin-top: 20px;
+}
 
-  .headline h1 {
-    font-size: 22px;
-  }
+/* Animations */
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-  .headline p {
-    font-size: 13px;
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .card-glass {
+    padding: 30px 20px;
+  }
+  
+  .brand-title {
+    font-size: 28px;
   }
 }
 </style>
