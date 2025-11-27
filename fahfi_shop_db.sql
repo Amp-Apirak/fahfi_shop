@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 13, 2025 at 06:13 PM
+-- Generation Time: Nov 27, 2025 at 04:26 PM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- PHP Version: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -42,16 +42,20 @@ CREATE TABLE `action_logs` (
 --
 
 INSERT INTO `action_logs` (`id`, `user_id`, `action_type`, `target_table`, `target_id`, `details`, `timestamp`) VALUES
-(1, 3, 'REGISTER', 'users', 3, 'User new_admin registered.', '2025-11-13 15:27:58'),
-(2, 3, 'LOGIN', NULL, NULL, 'User new_admin logged in.', '2025-11-13 15:34:16'),
-(3, 3, 'LOGIN', NULL, NULL, 'User new_admin logged in.', '2025-11-13 16:00:22'),
-(4, 3, 'CREATE', 'products', 1, 'User new_admin created product: เสื้อยืดคอกลม สีขาว', '2025-11-13 16:01:48'),
-(5, 3, 'UPDATE', 'products', 1, 'User new_admin updated product ID: 1 (Name: เสื้อยืดคอกลม สีดำ (แก้ไข))', '2025-11-13 16:32:53'),
-(6, 3, 'CREATE', 'expenses', 1, 'User new_admin created expense: ค่าเช่าร้าน ประจำเดือน พ.ย. (Amount: 15000)', '2025-11-13 16:49:09'),
-(7, 3, 'UPDATE', 'expenses', 1, 'User new_admin updated expense ID: 1 (Details: ค่าเช่าร้าน ประจำเดือน พ.ย.)', '2025-11-13 16:53:11'),
-(8, 3, 'UPDATE', 'expenses', 1, 'User new_admin updated expense ID: 1 (Details: ค่าเช่าร้าน ประจำเดือน พ.ย. (แก้ไข))', '2025-11-13 16:53:23'),
-(9, 3, 'CREATE_SALE', 'sales', 1, 'User new_admin created Sale ID: 1. Items: (ID 1: 2 ชิ้น)', '2025-11-13 16:58:11'),
-(10, 3, 'DELETE_SALE', 'sales', 1, 'User new_admin DELETED Sale ID: 1. Stock restored: (ProductID 1: Restored 2 units)', '2025-11-13 17:04:09');
+(1, 3, 'REGISTER', 'users', 3, 'User Ampapirak registered.', '2025-11-27 11:47:24'),
+(2, 3, 'LOGIN', NULL, NULL, 'User Ampapirak logged in.', '2025-11-27 11:50:01'),
+(3, 3, 'LOGIN', NULL, NULL, 'User Ampapirak logged in.', '2025-11-27 14:28:35'),
+(4, 3, 'CREATE', 'products', 1, 'User Ampapirak created product: เสื้อสเวตเตอร์คอกลม', '2025-11-27 14:30:18'),
+(5, 3, 'UPDATE', 'products', 1, 'User Ampapirak updated product ID: 1 (Name: เสื้อสเวตเตอร์คอกลม)', '2025-11-27 14:31:12'),
+(6, 3, 'CREATE', 'products', 2, 'User Ampapirak created product: เสื้อสเวตเตอร์คอกลม', '2025-11-27 14:58:24'),
+(7, 3, 'UPDATE', 'products', 2, 'User Ampapirak updated product ID: 2 (Name: เสื้อสเวตเตอร์คอกลม)', '2025-11-27 14:59:03'),
+(8, 3, 'UPDATE', 'products', 2, 'User Ampapirak updated product ID: 2 (Name: เสื้อสเวตเตอร์คอกลม)', '2025-11-27 15:07:58'),
+(9, 3, 'CREATE', 'products', 3, 'User Ampapirak created product: เสื้อยืดคอกลม', '2025-11-27 15:09:33'),
+(10, 3, 'LOGIN', NULL, NULL, 'User Ampapirak logged in.', '2025-11-27 15:12:18'),
+(11, 4, 'REGISTER', 'users', 4, 'User fahsai registered.', '2025-11-27 15:13:55'),
+(12, 4, 'LOGIN', NULL, NULL, 'User fahsai logged in.', '2025-11-27 15:14:39'),
+(13, 4, 'CREATE_SALE', 'sales', 1, 'User fahsai created Sale ID: 1. Items: เสื้อสเวตเตอร์คอกลม (x1). Total: 139 (Discount: 0)', '2025-11-27 15:14:56'),
+(14, 4, 'DELETE_SALE', 'sales', 1, 'User fahsai DELETED Sale ID: 1. Stock restored: (ProductID 1: Restored 1 units)', '2025-11-27 15:15:09');
 
 -- --------------------------------------------------------
 
@@ -71,13 +75,6 @@ CREATE TABLE `expenses` (
   `last_updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `last_updated_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `expenses`
---
-
-INSERT INTO `expenses` (`id`, `expense_date`, `category`, `details`, `amount`, `receipt_image_url`, `created_by`, `created_at`, `last_updated_at`, `last_updated_by`) VALUES
-(1, '2025-11-13', 'ค่าเช่า', 'ค่าเช่าร้าน ประจำเดือน พ.ย. (แก้ไข)', 15500.00, NULL, 3, '2025-11-13 16:49:09', '2025-11-13 16:53:23', 3);
 
 -- --------------------------------------------------------
 
@@ -105,7 +102,9 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `category`, `grade`, `details`, `cost_price`, `sell_price`, `stock_quantity`, `product_image_url`, `created_at`, `last_updated_at`, `last_updated_by`) VALUES
-(1, 'เสื้อยืดคอกลม สีดำ (แก้ไข)', 'T-Shirt', 'B', 'แก้ไขรายละเอียดสินค้า', 110.00, 250.00, 40, NULL, '2025-11-13 16:01:48', '2025-11-13 17:04:09', 3);
+(1, 'เสื้อสเวตเตอร์คอกลม', 'เสื้อ', 'A', 'เสื้อสเวตเตอร์คอกลม เกรด A', 35.00, 139.00, 100, 'http://localhost:3001/uploads/1764253869503.jpg', '2025-11-27 14:30:18', '2025-11-27 15:15:09', 3),
+(2, 'เสื้อสเวตเตอร์คอกลม', 'เสื้อ', 'B', 'เสื้อสเวตเตอร์คอกลม เกรด B', 35.00, 100.00, 100, '/api/uploads/1764256075017.jpg', '2025-11-27 14:58:23', '2025-11-27 15:07:58', 3),
+(3, 'เสื้อยืดคอกลม', 'เสื้อ', 'AB', 'เสื้อยืดคอกลม AB', 35.00, 60.00, 100, '/api/uploads/1764256170928.jpg', '2025-11-27 15:09:33', '2025-11-27 15:09:33', 3);
 
 -- --------------------------------------------------------
 
@@ -128,6 +127,7 @@ CREATE TABLE `sales` (
   `id` int(11) NOT NULL,
   `sale_date` timestamp NOT NULL DEFAULT current_timestamp(),
   `total_amount` decimal(10,2) NOT NULL COMMENT 'ยอดรวมสุทธิหลังหักส่วนลด',
+  `discount` decimal(10,2) NOT NULL DEFAULT 0.00,
   `created_by` int(11) NOT NULL COMMENT 'User ID ที่ขาย',
   `last_updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `last_updated_by` int(11) DEFAULT NULL
@@ -170,7 +170,8 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `username`, `password`, `role`, `created_at`) VALUES
 (1, 'admin', '$2b$10$EXAMPLE_HASH_PASSWORD', 'Admin', '2025-11-13 14:25:39'),
 (2, 'staff', '$2b$10$EXAMPLE_HASH_PASSWORD', 'Staff', '2025-11-13 14:25:39'),
-(3, 'new_admin', '$2b$10$cV7XBrdgz8OHrKAh2WPMsenLmTv9Zcow/gM6OPIf0g3UeoXmC7AjS', 'Admin', '2025-11-13 15:27:58');
+(3, 'Ampapirak', '$2b$10$PYQ4b/MkxJDDdJZxgDMeSuSY1tf2nIoyI6ELRv2UQIO3042Qme7YC', 'Admin', '2025-11-27 11:47:24'),
+(4, 'fahsai', '$2b$10$b0Z2.no8F/riSLc57et0ouagZAKT5bsS20/N8Tw6EC1/YNckhUdQW', 'Admin', '2025-11-27 15:13:55');
 
 --
 -- Indexes for dumped tables
@@ -230,19 +231,19 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `action_logs`
 --
 ALTER TABLE `action_logs`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `expenses`
 --
 ALTER TABLE `expenses`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `product_categories`
@@ -266,7 +267,7 @@ ALTER TABLE `sale_details`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- Constraints for dumped tables

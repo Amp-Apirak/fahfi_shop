@@ -15,7 +15,12 @@
       "Bash(npm start)",
       "Bash(npm run dev:*)",
       "Bash(mysql:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(node -c:*)",
+      "Bash(sudo service mysql start:*)",
+      "Bash(sudo service mysql:*)",
+      "Bash(netstat:*)",
+      "Bash(apt list:*)"
     ],
     "deny": [],
     "ask": []
