@@ -128,8 +128,9 @@
        ProxyPassReverse /api http://localhost:3001/api
 
        # ส่วนที่เหลือ -> Frontend (Nuxt, 3000)
-       ProxyPass / http://localhost:3000/
-       ProxyPassReverse / http://localhost:3000/
+       # แก้ไข: ให้เข้าผ่าน /fahfishop เท่านั้น (ไม่เข้าผ่าน root /)
+       ProxyPass /fahfishop http://localhost:3000/fahfishop
+       ProxyPassReverse /fahfishop http://localhost:3000/fahfishop
 
        ErrorLog "logs/iss-error.log"
        CustomLog "logs/iss-access.log" common
