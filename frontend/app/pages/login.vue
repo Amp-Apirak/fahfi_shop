@@ -65,7 +65,7 @@ const { login } = useAuth();
 
 const handleLogin = async () => {
   try {
-    const response = await axios.post("http://localhost:3001/api/login", {
+      const response = await axios.post("/api/login", {
       username: username.value,
       password: password.value,
     });

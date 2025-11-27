@@ -248,7 +248,7 @@ const fetchCharts = async (start?: string | null, end?: string | null) => {
 
     // Try to fetch from /api/dashboard/charts
     try {
-      const response = await axios.get('http://localhost:3001/api/dashboard/charts', {
+      const response = await axios.get('/api/dashboard/charts', {
         headers: { 'Authorization': `Bearer ${token.value}` },
         params
       })
@@ -258,7 +258,7 @@ const fetchCharts = async (start?: string | null, end?: string | null) => {
     } catch (chartError: any) {
       // Fallback to summary endpoint if charts fails
       console.warn('⚠️ Charts endpoint failed, using summary endpoint:', chartError.message)
-      const summaryResponse = await axios.get('http://localhost:3001/api/dashboard/summary', {
+      const summaryResponse = await axios.get('/api/dashboard/summary', {
         headers: { 'Authorization': `Bearer ${token.value}` },
         params
       })

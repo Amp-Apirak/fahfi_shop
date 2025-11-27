@@ -507,7 +507,7 @@ const salesPending = ref(false);
 const fetchProducts = async () => {
   pending.value = true;
   try {
-    const response = await axios.get("http://localhost:3001/api/products", {
+    const response = await axios.get("/api/products", {
       headers: { Authorization: `Bearer ${token.value}` },
     });
     products.value = response.data;
@@ -526,7 +526,7 @@ const fetchProducts = async () => {
 const fetchRecentSales = async () => {
   salesPending.value = true;
   try {
-    const response = await axios.get('http://localhost:3001/api/sales/recent', {
+    const response = await axios.get('/api/sales/recent', {
       headers: { 'Authorization': `Bearer ${token.value}` }
     });
     recentSales.value = response.data;
@@ -645,7 +645,7 @@ const confirmPayment = async () => {
     };
 
     // 2. ยิง API
-    await axios.post("http://localhost:3001/api/sales", saleData, {
+    await axios.post("/api/sales", saleData, {
       headers: { Authorization: `Bearer ${token.value}` },
     });
 

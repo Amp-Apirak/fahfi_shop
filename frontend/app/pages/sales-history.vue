@@ -286,7 +286,7 @@ const fetchSalesHistory = async () => {
     if (filters.value.endDate) params.append("endDate", filters.value.endDate);
     if (filters.value.search) params.append("search", filters.value.search);
 
-    const response = await axios.get(`http://localhost:3001/api/sales?${params.toString()}`, {
+    const response = await axios.get(`/api/sales?${params.toString()}`, {
       headers: { Authorization: `Bearer ${token.value}` },
     });
     sales.value = response.data;
@@ -333,7 +333,7 @@ const openDetailsModal = async (saleId) => {
   selectedSale.value = {};
 
   try {
-    const response = await axios.get(`http://localhost:3001/api/sales/${saleId}`, {
+    const response = await axios.get(`/api/sales/${saleId}`, {
       headers: { Authorization: `Bearer ${token.value}` },
     });
     selectedSale.value = response.data;
@@ -359,7 +359,7 @@ const handleDeleteSale = async (saleId) => {
   if (!result.isConfirmed) return;
   
   try {
-    const response = await axios.delete(`http://localhost:3001/api/sales/${saleId}`, {
+    const response = await axios.delete(`/api/sales/${saleId}`, {
       headers: { Authorization: `Bearer ${token.value}` }
     });
     

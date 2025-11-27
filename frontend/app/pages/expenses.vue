@@ -146,7 +146,7 @@ const currentExpense = ref({ ...defaultExpenseForm });
 const fetchExpenses = async () => {
   pending.value = true;
   try {
-    const response = await axios.get('http://localhost:3001/api/expenses', {
+    const response = await axios.get('/api/expenses', {
       headers: { 'Authorization': `Bearer ${token.value}` }
     });
     expenses.value = response.data;
@@ -189,14 +189,14 @@ const handleSubmit = async () => {
   try {
     if (modalMode.value === 'add') {
       await axios.post(
-        'http://localhost:3001/api/expenses',
+        '/api/expenses',
         currentExpense.value,
         { headers: { 'Authorization': `Bearer ${token.value}` } }
       );
     } 
     else if (modalMode.value === 'edit') {
       await axios.put(
-        `http://localhost:3001/api/expenses/${currentExpense.value.id}`,
+        `/api/expenses/${currentExpense.value.id}`,
         currentExpense.value,
         { headers: { 'Authorization': `Bearer ${token.value}` } }
       );
@@ -217,7 +217,7 @@ const handleDelete = async (expenseId, expenseDetails) => {
   }
   try {
     await axios.delete(
-      `http://localhost:3001/api/expenses/${expenseId}`,
+      `/api/expenses/${expenseId}`,
       { headers: { 'Authorization': `Bearer ${token.value}` } }
     );
     await fetchExpenses();

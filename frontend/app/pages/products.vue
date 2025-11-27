@@ -249,7 +249,7 @@ const currentProduct = ref({ ...defaultProductForm });
 const fetchProducts = async () => {
   pending.value = true; // เริ่มโหลด
   try {
-    const response = await axios.get("http://localhost:3001/api/products", {
+    const response = await axios.get("/api/products", {
       headers: { Authorization: `Bearer ${token.value}` },
     });
     products.value = response.data; // เก็บข้อมูล
@@ -300,7 +300,7 @@ const handleImageUpload = async (event) => {
     formData.append("image", file);
 
     const response = await axios.post(
-      "http://localhost:3001/api/upload",
+        "/api/upload",
       formData,
       {
         headers: {
@@ -410,14 +410,14 @@ const handleSubmit = async () => {
 
     if (modalMode.value === "add") {
       const response = await axios.post(
-        "http://localhost:3001/api/products",
+        "/api/products",
         currentProduct.value,
         { headers: { Authorization: `Bearer ${token.value}` } }
       );
       console.log('✅ Product added:', response.data);
     } else if (modalMode.value === "edit") {
       const response = await axios.put(
-        `http://localhost:3001/api/products/${currentProduct.value.id}`,
+        `/api/products/${currentProduct.value.id}`,
         currentProduct.value,
         { headers: { Authorization: `Bearer ${token.value}` } }
       );
@@ -548,7 +548,7 @@ const handleDelete = async (productId, productName) => {
     // 2. ยิง API "DELETE"
     console.log(`🗑️ Deleting product ID: ${productId}`);
     await axios.delete(
-      `http://localhost:3001/api/products/${productId}`,
+      `/api/products/${productId}`,
       { headers: { 'Authorization': `Bearer ${token.value}` } }
     );
 
