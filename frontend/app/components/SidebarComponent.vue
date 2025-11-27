@@ -76,7 +76,8 @@ const menuItems = computed(() => {
   if (isAdmin.value) {
     baseItems.push(
       { id: 3, label: 'สต็อกสินค้า (AI)', icon: 'box', route: '/products' },
-      { id: 4, label: 'ประวัติการขาย', icon: 'history', route: '/sales-history' }
+      { id: 4, label: 'ประวัติการขาย', icon: 'history', route: '/sales-history' },
+      { id: 5, label: 'บันทึกรายจ่าย', icon: 'hand-holding-dollar', route: '/expenses' }
     )
   }
 

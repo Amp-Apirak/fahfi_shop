@@ -685,24 +685,41 @@ app.post('/api/expenses', authenticateToken, express.json(), async (req, res) =>
 
 app.get('/api/expenses', authenticateToken, async (req, res) => {
   try {
-    // 1. ดึงข้อมูลรายจ่ายทั้งหมดจากฐานข้อมูล
-    // เราอาจจะ Join ตาราง users เพื่อดึง "ชื่อ" ผู้บันทึก (created_by) มาแสดงผลด้วย
-    const [expenses] = await db.promise().query(
-      `SELECT 
+    const { startDate, endDate, category } = req.query;
+    
+    let sql = `SELECT 
                 e.*, 
                 u.username AS created_by_username 
             FROM expenses e
             LEFT JOIN users u ON e.created_by = u.id
-            ORDER BY e.expense_date DESC, e.created_at DESC` // เรียงจากวันที่ล่าสุดไปเก่าสุด
-    );
+            WHERE 1=1`;
+    
+    const params = [];
 
-    // 2. ส่งข้อมูลกลับไป
-    res.status(200).json(expenses); // ส่งข้อมูลรายจ่ายทั้งหมดกลับไปเป็น Array
+    if (startDate) {
+        sql += ` AND e.expense_date >= ?`;
+        params.push(startDate);
+    }
+    if (endDate) {
+        sql += ` AND e.expense_date <= ?`;
+        params.push(endDate);
+    }
+    if (category && category !== '') {
+        sql += ` AND e.category = ?`;
+        params.push(category);
+    }
+
+    sql += ` ORDER BY e.expense_date DESC, e.created_at DESC`;
+
+    const [expenses] = await db.promise().query(sql, params);
+
+    res.status(200).json(expenses);
   } catch (error) {
     console.error("❌ Error getting expenses:", error.message);
     res.status(500).json({ message: "เกิดข้อผิดพลาดที่ Server" });
   }
 });
+
 
 // @route   PUT /api/expenses/:id
 // @desc    แก้ไขข้อมูลรายจ่าย (Update an expense)
