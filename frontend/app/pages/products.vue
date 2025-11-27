@@ -173,7 +173,7 @@
                     <div class="mb-2">
                       <label class="form-label small">หรือใส่ URL รูปภาพ</label>
                       <input
-                        type="url"
+                        type="text"
                         class="form-control"
                         placeholder="https://example.com/image.jpg"
                         v-model="currentProduct.product_image_url"
