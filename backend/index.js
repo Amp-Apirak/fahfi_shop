@@ -18,9 +18,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// (เพิ่ม) สั่งให้ Express เปิดโฟลเดอร์ 'public' เป็นแบบ Static
-// (เพื่อให้ Frontend สามารถ "อ่าน" รูปภาพจาก URL http://localhost:3001/uploads/...)
-app.use(express.static("public"));
+// (เพิ่ม) สั่งให้ Express เปิดโฟลเดอร์ 'public/uploads' เป็นแบบ Static ที่ path '/api/uploads'
+// (เพื่อให้ Frontend สามารถ "อ่าน" รูปภาพจาก URL /api/uploads/...)
+app.use("/api/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 // Create Connection to DB
 const db = mysql.createPool({
@@ -259,7 +259,8 @@ app.post(
 
       // (สำคัญ) สร้าง URL ที่ Frontend จะใช้
       // (req.file.filename คือชื่อใหม่ที่ Multer ตั้งให้ เช่น 123456789.jpg)
-      const fileUrl = `http://localhost:3001/uploads/${req.file.filename}`;
+      // แก้ไข: ส่งกลับเป็น Relative URL เพื่อให้ผ่าน Proxy ได้ถูกต้อง
+      const fileUrl = `/api/uploads/${req.file.filename}`;
 
       // ส่ง URL กลับไปให้ Frontend
       res.status(200).json({

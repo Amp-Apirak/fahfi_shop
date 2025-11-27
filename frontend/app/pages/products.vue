@@ -54,7 +54,7 @@
                       :key="product.product_image_url"
                     >
                       <img
-                        :src="product.product_image_url"
+                        :src="formatImageUrl(product.product_image_url)"
                         :alt="product.name"
                         class="product-thumbnail"
                         loading="lazy"
@@ -141,7 +141,7 @@
                   <!-- Preview Image -->
                   <div v-if="currentProduct.product_image_url || imagePreview" class="mb-2">
                     <img
-                      :src="imagePreview || currentProduct.product_image_url"
+                      :src="imagePreview || formatImageUrl(currentProduct.product_image_url)"
                       alt="Product Preview"
                       class="product-preview-img"
                     />
@@ -338,6 +338,17 @@ const handleImageError = (event) => {
   if (placeholder) {
     placeholder.style.display = 'flex';
   }
+};
+
+// (เพิ่มใหม่) ฟังก์ชันแปลง URL รูปภาพให้ถูกต้อง (แก้ปัญหา Localhost)
+const formatImageUrl = (url) => {
+  if (!url) return null;
+  // ถ้า URL เป็น localhost:3001 (จากข้อมูลเก่า) ให้เปลี่ยนเป็น /api/uploads
+  if (url.includes('localhost:3001/uploads')) {
+    return url.replace('http://localhost:3001/uploads', '/api/uploads');
+  }
+  // ถ้าเป็น URL ปกติ หรือ Relative URL อยู่แล้ว ก็คืนค่าเดิม
+  return url;
 };
 
 // 6. Lifecycle Hook

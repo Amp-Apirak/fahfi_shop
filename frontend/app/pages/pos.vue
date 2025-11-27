@@ -73,7 +73,7 @@
                         class="product-image-cell"
                       >
                         <img
-                          :src="product.product_image_url"
+                          :src="formatImageUrl(product.product_image_url)"
                           :alt="product.name"
                           class="product-thumbnail"
                           onerror="this.onerror=null; this.src='https://via.placeholder.com/80?text=No+Image'"
@@ -156,8 +156,8 @@
                       <div v-if="products" class="cart-item-image">
                         <img
                           :src="
-                            products.find((p) => p.id === item.product_id)
-                              ?.product_image_url ||
+                            formatImageUrl(products.find((p) => p.id === item.product_id)
+                              ?.product_image_url) ||
                             'https://via.placeholder.com/60?text=No+Image'
                           "
                           :alt="item.name"
@@ -686,6 +686,17 @@ const confirmPayment = async () => {
 const cancelQRPayment = () => {
   showPaymentModal.value = false;
   qrCodeData.value = null;
+};
+
+// (เพิ่มใหม่) ฟังก์ชันแปลง URL รูปภาพให้ถูกต้อง (แก้ปัญหา Localhost)
+const formatImageUrl = (url) => {
+  if (!url) return null;
+  // ถ้า URL เป็น localhost:3001 (จากข้อมูลเก่า) ให้เปลี่ยนเป็น /api/uploads
+  if (url.includes('localhost:3001/uploads')) {
+    return url.replace('http://localhost:3001/uploads', '/api/uploads');
+  }
+  // ถ้าเป็น URL ปกติ หรือ Relative URL อยู่แล้ว ก็คืนค่าเดิม
+  return url;
 };
 </script>
 
