@@ -8,6 +8,7 @@ export default defineNuxtConfig({
   ],
 
   app: {
+    baseURL: '/fahfishop/', // กำหนด Base URL เป็น /fahfishop/
     head: {
       link: [
         {

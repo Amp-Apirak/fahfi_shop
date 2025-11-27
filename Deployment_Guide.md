@@ -21,6 +21,13 @@
       npm install -g pm2-windows-startup
       pm2-startup install
       ```
+      > **ปัญหาที่พบบ่อย**: หากเจอ Error สีแดงว่า `...cannot be loaded because running scripts is disabled...` ให้รันคำสั่งนี้ก่อนครับ:
+      >
+      > ```powershell
+      > Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+      > ```
+      >
+      > (กด Y เพื่อยืนยัน) แล้วค่อยรันคำสั่ง npm ใหม่
 
 ---
 
@@ -32,53 +39,6 @@
 
 ---
 
-## ขั้นตอนที่ 2: การตั้งค่า Backend
-
-1.  เปิด PowerShell และเข้าไปที่โฟลเดอร์ backend:
-    ```powershell
-    cd C:\fahfi_shop\backend
-    ```
-2.  ติดตั้งไลบรารีต่างๆ:
-    ```powershell
-    npm install
-    ```
-3.  ตั้งค่าตัวแปรสภาพแวดล้อม (Environment Variables):
-    - สร้างไฟล์ชื่อ `.env` ในโฟลเดอร์ `backend` (ถ้ายังไม่มี)
-    - ใส่ข้อมูลตามนี้ (แก้รหัสผ่านให้ตรงกับของคุณ):
-      ```env
-      PORT=3001
-      DB_HOST=localhost
-      DB_USER=root
-      DB_PASSWORD=
-      DB_DATABASE=fahfi_shop_db
-      JWT_SECRET=your_secret_key_change_this
-      ```
-4.  เริ่มรัน Backend ด้วย PM2:
-    ```powershell
-    pm2 start index.js --name "fahfi-backend"
-    ```
-5.  บันทึกสถานะโปรเซส:
-    ```powershell
-    pm2 save
-    ```
-
----
-
-## ขั้นตอนที่ 3: การตั้งค่า Frontend (Nuxt 3)
-
-1.  เข้าไปที่โฟลเดอร์ frontend:
-    ```powershell
-    cd C:\fahfi_shop\frontend
-    ```
-2.  ติดตั้งไลบรารีต่างๆ:
-    ```powershell
-    npm install
-    ```
-3.  สร้างไฟล์สำหรับใช้งานจริง (Build):
-    ```powershell
-    npm run build
-    ```
-    _(ขั้นตอนนี้จะสร้างโฟลเดอร์ `.output` ขึ้นมา)_
 4.  เริ่มรัน Frontend ด้วย PM2:
     ```powershell
     pm2 start .output/server/index.mjs --name "fahfi-frontend"
