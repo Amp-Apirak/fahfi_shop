@@ -37,7 +37,7 @@
             <label class="form-label small fw-bold text-muted">ถึงวันที่</label>
             <input type="date" class="form-control" v-model="filters.endDate">
           </div>
-          </div>
+
           <div class="col-md-3">
             <label class="form-label small fw-bold text-muted">ค้นหา (ทั้งหมด)</label>
             <div class="input-group">
