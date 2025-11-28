@@ -160,6 +160,7 @@ const endDate = ref('')
 // Date Tab Options
 const dateTabs = [
   { label: 'วันนี้', value: 'today' },
+  { label: 'เมื่อวาน', value: 'yesterday' },
   { label: 'สัปดาห์นี้', value: 'week' },
   { label: 'เดือนนี้', value: 'month' },
   { label: 'ปีนี้', value: 'year' },
@@ -176,6 +177,12 @@ const getDateRange = (tab: string) => {
   switch (tab) {
     case 'today':
       start.setHours(0, 0, 0, 0)
+      end.setHours(23, 59, 59, 999)
+      break
+    case 'yesterday':
+      start.setDate(today.getDate() - 1)
+      start.setHours(0, 0, 0, 0)
+      end.setDate(today.getDate() - 1)
       end.setHours(23, 59, 59, 999)
       break
     case 'week':

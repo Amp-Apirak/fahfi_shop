@@ -1554,8 +1554,6 @@ app.get("/api/dashboard/summary", authenticateToken, async (req, res) => {
     let salesQuery = `SELECT SUM(total_amount) AS totalSales FROM sales WHERE 1=1`;
     if (startDate && endDate) {
       salesQuery += ` AND DATE(sale_date) BETWEEN ? AND ?`;
-    } else {
-      salesQuery += ` AND DATE(sale_date) = CURDATE()`;
     }
     const [salesToday] = await db.promise().query(salesQuery, dateParams);
 
@@ -1563,8 +1561,6 @@ app.get("/api/dashboard/summary", authenticateToken, async (req, res) => {
     let expensesQuery = `SELECT SUM(amount) AS totalExpenses FROM expenses WHERE 1=1`;
     if (startDate && endDate) {
       expensesQuery += ` AND DATE(expense_date) BETWEEN ? AND ?`;
-    } else {
-      expensesQuery += ` AND DATE(expense_date) = CURDATE()`;
     }
     const [expensesToday] = await db.promise().query(expensesQuery, dateParams);
 
@@ -1572,8 +1568,6 @@ app.get("/api/dashboard/summary", authenticateToken, async (req, res) => {
     let ordersQuery = `SELECT COUNT(id) AS totalOrders FROM sales WHERE 1=1`;
     if (startDate && endDate) {
       ordersQuery += ` AND DATE(sale_date) BETWEEN ? AND ?`;
-    } else {
-      ordersQuery += ` AND DATE(sale_date) = CURDATE()`;
     }
     const [ordersToday] = await db.promise().query(ordersQuery, dateParams);
 
@@ -1659,8 +1653,6 @@ app.get("/api/dashboard/charts", authenticateToken, async (req, res) => {
 
     if (startDate && endDate) {
       top5Query += ` AND DATE(s.sale_date) BETWEEN ? AND ?`;
-    } else {
-      top5Query += ` AND DATE(s.sale_date) = CURDATE()`;
     }
 
     top5Query += ` GROUP BY sd.product_id, p.name
@@ -1688,8 +1680,6 @@ app.get("/api/dashboard/charts", authenticateToken, async (req, res) => {
 
     if (startDate && endDate) {
       latest10Query += ` AND DATE(s.sale_date) BETWEEN ? AND ?`;
-    } else {
-      latest10Query += ` AND DATE(s.sale_date) = CURDATE()`;
     }
 
     latest10Query += ` GROUP BY s.id
@@ -1716,8 +1706,6 @@ app.get("/api/dashboard/charts", authenticateToken, async (req, res) => {
     let salesQuery = `SELECT SUM(total_amount) AS totalSales FROM sales WHERE 1=1`;
     if (startDate && endDate) {
       salesQuery += ` AND DATE(sale_date) BETWEEN ? AND ?`;
-    } else {
-      salesQuery += ` AND DATE(sale_date) = CURDATE()`;
     }
     const salesParams = (startDate && endDate) ? [startDate, endDate] : [];
     const [salesSummary] = await db.promise().query(salesQuery, salesParams);
@@ -1725,8 +1713,6 @@ app.get("/api/dashboard/charts", authenticateToken, async (req, res) => {
     let expensesQuery = `SELECT SUM(amount) AS totalExpenses FROM expenses WHERE 1=1`;
     if (startDate && endDate) {
       expensesQuery += ` AND DATE(expense_date) BETWEEN ? AND ?`;
-    } else {
-      expensesQuery += ` AND DATE(expense_date) = CURDATE()`;
     }
     const expensesParams = (startDate && endDate) ? [startDate, endDate] : [];
     const [expensesSummary] = await db.promise().query(expensesQuery, expensesParams);
@@ -1739,8 +1725,6 @@ app.get("/api/dashboard/charts", authenticateToken, async (req, res) => {
     let orderQuery = `SELECT COUNT(id) AS totalOrders FROM sales WHERE 1=1`;
     if (startDate && endDate) {
       orderQuery += ` AND DATE(sale_date) BETWEEN ? AND ?`;
-    } else {
-      orderQuery += ` AND DATE(sale_date) = CURDATE()`;
     }
     const orderParams = (startDate && endDate) ? [startDate, endDate] : [];
     const [orderCount] = await db.promise().query(orderQuery, orderParams);
