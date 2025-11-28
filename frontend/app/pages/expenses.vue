@@ -97,7 +97,7 @@
                   </div>
                 </td>
                 <td>
-                  <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">
+                  <span class="badge border" :class="getCategoryColor(expense.category)">
                     {{ expense.category }}
                   </span>
                 </td>
@@ -342,6 +342,41 @@ const sortBy = (key) => {
 const getSortIcon = (key) => {
   if (sortKey.value !== key) return "fa-sort text-muted opacity-25";
   return sortOrder.value === "asc" ? "fa-sort-up text-primary" : "fa-sort-down text-primary";
+};
+
+
+
+// Helper: Get Category Color Class
+// Helper: Get Category Color Class
+const getCategoryColor = (category) => {
+  if (!category) return "bg-secondary bg-opacity-10 text-secondary border-secondary border-opacity-25";
+  
+  const cat = category.toLowerCase();
+  
+  // Info (Blue/Cyan) - Travel, Transport, Fuel
+  if (cat.includes("เดินทาง") || cat.includes("น้ำมัน") || cat.includes("ขนส่ง")) {
+      return "bg-info bg-opacity-10 text-info border-info border-opacity-25";
+  } 
+  // Primary (Blue) - Equipment, Marketing, Ads, General Stuff
+  else if (cat.includes("อุปกรณ์") || cat.includes("การตลาด") || cat.includes("โฆษณา") || cat.includes("ทั่วไป")) {
+      return "bg-primary bg-opacity-10 text-primary border-primary border-opacity-25";
+  } 
+  // Warning (Yellow/Orange) - Utilities, Water, Electric, Internet
+  else if (cat.includes("น้ำ") || cat.includes("ไฟ") || cat.includes("เน็ต") || cat.includes("สาธารณูปโภค")) {
+      return "bg-warning bg-opacity-10 text-warning border-warning border-opacity-25";
+  } 
+  // Success (Green) - Salary, Materials, Stock
+  else if (cat.includes("เงินเดือน") || cat.includes("วัตถุดิบ") || cat.includes("สินค้า") || cat.includes("พัสดุ")) {
+      return "bg-success bg-opacity-10 text-success border-success border-opacity-25";
+  } 
+  // Danger (Red) - Rent, Urgent, Fines
+  else if (cat.includes("ซักผ้า") || cat.includes("อื่นๆ")) {
+      return "bg-danger bg-opacity-10 text-danger border-danger border-opacity-25";
+  } 
+  // Default (Grey) - Others
+  else {
+      return "bg-secondary bg-opacity-10 text-secondary border-secondary border-opacity-25";
+  }
 };
 
 // Helper: Format Date
