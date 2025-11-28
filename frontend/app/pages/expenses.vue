@@ -165,6 +165,7 @@
               <div class="mb-3">
                 <label class="form-label fw-bold text-muted small">หมวดหมู่</label>
                 <select class="form-select" v-model="currentExpense.category">
+                  <option value="สต็อกสินค้า">สต็อกสินค้า</option>
                   <option value="ค่าเดินทาง">ค่าเดินทาง</option>
                   <option value="ค่าอุปกรณ์">ค่าอุปกรณ์</option>
                   <option value="ค่าน้ำ/ค่าไฟ">ค่าน้ำ/ค่าไฟ</option>
