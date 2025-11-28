@@ -37,15 +37,21 @@
             <label class="form-label small fw-bold text-muted">ถึงวันที่</label>
             <input type="date" class="form-control" v-model="filters.endDate">
           </div>
+
           <div class="col-md-3">
-            <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary w-100 fw-bold">
-                <i class="fas fa-search me-1"></i> ค้นหา
+            <label class="form-label small fw-bold text-muted">ค้นหา (ทั้งหมด)</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+              <input type="text" class="form-control border-start-0 ps-0" v-model="searchQuery" placeholder="พิมพ์คำค้นหา...">
+            </div>
+          </div>
+          <div class="col-12 mt-3 text-end">
+             <button type="submit" class="btn btn-primary fw-bold me-2">
+                <i class="fas fa-filter me-1"></i> กรองข้อมูล
               </button>
               <button type="button" class="btn btn-outline-secondary" @click="resetFilters" title="ล้างค่า">
-                <i class="fas fa-undo"></i>
+                <i class="fas fa-undo me-1"></i> ล้างค่า
               </button>
-            </div>
           </div>
         </form>
       </div>
@@ -58,23 +64,33 @@
           <table class="table table-hover align-middle mb-0">
             <thead class="bg-light">
               <tr>
-                <th class="py-3 ps-4">วันที่</th>
-                <th class="py-3">หมวดหมู่</th>
-                <th class="py-3">รายละเอียด</th>
-                <th class="py-3 text-end">จำนวนเงิน</th>
-                <th class="py-3 text-center">ผู้บันทึก</th>
+                <th class="py-3 ps-4 cursor-pointer" @click="sortBy('expense_date')">
+                  วันที่ <i class="fas" :class="getSortIcon('expense_date')"></i>
+                </th>
+                <th class="py-3 cursor-pointer" @click="sortBy('category')">
+                  หมวดหมู่ <i class="fas" :class="getSortIcon('category')"></i>
+                </th>
+                <th class="py-3 cursor-pointer" @click="sortBy('details')">
+                  รายละเอียด <i class="fas" :class="getSortIcon('details')"></i>
+                </th>
+                <th class="py-3 text-end cursor-pointer" @click="sortBy('amount')">
+                  จำนวนเงิน <i class="fas" :class="getSortIcon('amount')"></i>
+                </th>
+                <th class="py-3 text-center cursor-pointer" @click="sortBy('created_by_username')">
+                  ผู้บันทึก <i class="fas" :class="getSortIcon('created_by_username')"></i>
+                </th>
                 <th class="py-3 text-center">ใบเสร็จ</th>
                 <th class="py-3 text-center pe-4">จัดการ</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-if="expenses.length === 0">
+              <tr v-if="filteredExpenses.length === 0">
                 <td colspan="7" class="text-center py-5 text-muted">
                   <i class="fas fa-file-invoice-dollar fa-3x mb-3 opacity-25"></i>
                   <p>ไม่พบข้อมูลรายจ่าย</p>
                 </td>
               </tr>
-              <tr v-for="expense in expenses" :key="expense.id">
+              <tr v-for="expense in filteredExpenses" :key="expense.id">
                 <td class="ps-4">
                   <div class="d-flex flex-column">
                     <span class="fw-medium">{{ formatDate(expense.expense_date) }}</span>
@@ -245,7 +261,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import axios from "axios";
 import Swal from "sweetalert2";
 
@@ -276,6 +292,57 @@ const filters = ref({
   startDate: "",
   endDate: "",
 });
+
+// Search & Sort State
+const searchQuery = ref("");
+const sortKey = ref("expense_date"); // Default sort by date
+const sortOrder = ref("desc"); // Default newest first
+
+// Computed: Filtered & Sorted Expenses
+const filteredExpenses = computed(() => {
+  let result = [...expenses.value];
+
+  // 1. Search Filter
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter((expense) => {
+      return (
+        (expense.details && expense.details.toLowerCase().includes(query)) ||
+        (expense.category && expense.category.toLowerCase().includes(query)) ||
+        (expense.amount && expense.amount.toString().includes(query)) ||
+        (expense.created_by_username && expense.created_by_username.toLowerCase().includes(query))
+      );
+    });
+  }
+
+  // 2. Sorting
+  if (sortKey.value) {
+    result.sort((a, b) => {
+      let modifier = sortOrder.value === "asc" ? 1 : -1;
+      if (a[sortKey.value] < b[sortKey.value]) return -1 * modifier;
+      if (a[sortKey.value] > b[sortKey.value]) return 1 * modifier;
+      return 0;
+    });
+  }
+
+  return result;
+});
+
+// Sort Function
+const sortBy = (key) => {
+  if (sortKey.value === key) {
+    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+  } else {
+    sortKey.value = key;
+    sortOrder.value = "asc";
+  }
+};
+
+// Get Sort Icon
+const getSortIcon = (key) => {
+  if (sortKey.value !== key) return "fa-sort text-muted opacity-25";
+  return sortOrder.value === "asc" ? "fa-sort-up text-primary" : "fa-sort-down text-primary";
+};
 
 // Helper: Format Date
 const formatDate = (dateString) => {
@@ -468,5 +535,14 @@ onMounted(() => {
 
 .receipt-thumbnail:hover {
   transform: scale(1.1);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+  user-select: none;
+}
+
+.cursor-pointer:hover {
+  background-color: #f1f5f9;
 }
 </style>

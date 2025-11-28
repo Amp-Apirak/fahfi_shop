@@ -78,7 +78,7 @@
                   <h6 class="mb-0">{{ product.name }}</h6>
                   <small v-if="product.details" class="text-muted">{{ product.details }}</small>
                 </td>
-                <td><span class="badge bg-secondary bg-opacity-25 text-secondary-emphasis">{{ product.category }}</span></td>
+                <td><span class="badge border" :class="getCategoryColor(product.category)">{{ product.category }}</span></td>
                 <td class="text-end">฿{{ product.sell_price.toLocaleString() }}</td>
                 <td class="text-center">{{ product.stock_quantity }}</td>
                 <td class="text-center">
@@ -324,16 +324,6 @@ const fetchProducts = async () => {
       headers: { Authorization: `Bearer ${token.value}` },
     });
     products.value = response.data; // เก็บข้อมูล
-    console.log('✅ Products loaded:', products.value.length, 'items');
-
-    // Debug: check image URLs
-    products.value.forEach((product) => {
-      if (product.product_image_url) {
-        console.log(`✅ Product ${product.id} (${product.name}) image URL:`, product.product_image_url);
-      } else {
-        console.warn(`⚠️ Product ${product.id} (${product.name}) has no image URL`);
-      }
-    });
   } catch (err) {
     // ตรวจสอบ Auth Error (403, 401)
     const isAuthError = await handleApiError(err);
@@ -605,6 +595,38 @@ const handleSubmit = async () => {
       confirmButtonText: "ตกลง",
       confirmButtonColor: "#ef4444",
     });
+  }
+};
+
+// Helper: Get Category Color Class
+const getCategoryColor = (category) => {
+  if (!category) return "bg-secondary bg-opacity-10 text-secondary border-secondary border-opacity-25";
+  
+  const cat = category.toLowerCase();
+  
+  // Shirts/Tops (Blue/Info)
+  if (cat.includes("เสื้อ") || cat.includes("top")) {
+      return "bg-info bg-opacity-10 text-info border-info border-opacity-25";
+  } 
+  // Pants/Skirts (Green/Success)
+  else if (cat.includes("กางเกง") || cat.includes("กระโปรง") || cat.includes("bottom")) {
+      return "bg-success bg-opacity-10 text-success border-success border-opacity-25";
+  } 
+  // Sets/Suits (Purple/Primary)
+  else if (cat.includes("ชุด") || cat.includes("set") || cat.includes("suit")) {
+      return "bg-primary bg-opacity-10 text-primary border-primary border-opacity-25";
+  } 
+  // Accessories (Orange/Warning)
+  else if (cat.includes("หมวก") || cat.includes("กระเป๋า") || cat.includes("ถุงเท้า") || cat.includes("accessory")) {
+      return "bg-warning bg-opacity-10 text-warning border-warning border-opacity-25";
+  } 
+  // Special/Sale (Red/Danger)
+  else if (cat.includes("ลดราคา") || cat.includes("sale") || cat.includes("ตำหนิ")) {
+      return "bg-danger bg-opacity-10 text-danger border-danger border-opacity-25";
+  } 
+  // Default (Grey)
+  else {
+      return "bg-secondary bg-opacity-10 text-secondary border-secondary border-opacity-25";
   }
 };
 

@@ -88,7 +88,8 @@
                     </td>
                     <td class="text-center">
                       <span
-                        class="badge bg-secondary bg-opacity-25 text-secondary-emphasis"
+                        class="badge border"
+                        :class="getCategoryColor(product.category)"
                       >
                         {{ product.category || "-" }}
                       </span>
@@ -534,6 +535,7 @@ const getSortIcon = (key) => {
   return sortOrder.value === "asc" ? "fa-sort-up text-primary" : "fa-sort-down text-primary";
 };
 
+
 // 3. State สำหรับ "ตะกร้าสินค้า" (ฝั่งขวา)
 const cart = ref([]); // นี่คือหัวใจของหน้านี้
 const globalDiscount = ref(0); // ส่วนลดท้ายบิล
@@ -742,6 +744,62 @@ const confirmPayment = async () => {
 const cancelQRPayment = () => {
   showPaymentModal.value = false;
   qrCodeData.value = null;
+};
+
+// Helper: Get Category Color Class
+const getCategoryColor = (category) => {
+  if (!category) return "bg-secondary bg-opacity-10 text-secondary border-secondary border-opacity-25";
+  
+  const cat = category.toLowerCase();
+  
+  // 1. Explicit Mappings (Common Categories)
+  if (cat.includes("เสื้อ") || cat.includes("top") || cat.includes("shirt")) {
+      return "bg-info bg-opacity-10 text-info border-info border-opacity-25";
+  } 
+  if (cat.includes("กางเกง") || cat.includes("bottom") || cat.includes("pant") || cat.includes("skirt")) {
+      return "bg-success bg-opacity-10 text-success border-success border-opacity-25";
+  } 
+  if (cat.includes("ชุด") || cat.includes("set") || cat.includes("suit") || cat.includes("dress")) {
+      return "bg-primary bg-opacity-10 text-primary border-primary border-opacity-25";
+  } 
+  if (cat.includes("หมวก") || cat.includes("hat") || cat.includes("cap")) {
+      return "bg-warning bg-opacity-10 text-warning border-warning border-opacity-25";
+  }
+  if (cat.includes("กระเป๋า") || cat.includes("bag")) {
+      return "bg-danger bg-opacity-10 text-danger border-danger border-opacity-25";
+  }
+  if (cat.includes("ถุงเท้า") || cat.includes("sock")) {
+      return "bg-dark bg-opacity-10 text-dark border-dark border-opacity-25";
+  }
+  if (cat.includes("รองเท้า") || cat.includes("shoe")) {
+      return "bg-secondary bg-opacity-10 text-secondary border-secondary border-opacity-25";
+  }
+  if (cat.includes("ลดราคา") || cat.includes("sale") || cat.includes("ตำหนิ")) {
+      return "bg-danger text-white border-danger"; // Highlight Sale items more
+  } 
+
+  // 2. Hash-based Fallback for other categories
+  // This ensures consistent colors for the same category name without manual mapping
+  const colors = [
+    "bg-primary bg-opacity-10 text-primary border-primary border-opacity-25",
+    "bg-secondary bg-opacity-10 text-secondary border-secondary border-opacity-25",
+    "bg-success bg-opacity-10 text-success border-success border-opacity-25",
+    "bg-danger bg-opacity-10 text-danger border-danger border-opacity-25",
+    "bg-warning bg-opacity-10 text-warning border-warning border-opacity-25",
+    "bg-info bg-opacity-10 text-info border-info border-opacity-25",
+    "bg-dark bg-opacity-10 text-dark border-dark border-opacity-25",
+    "bg-indigo bg-opacity-10 text-indigo border-indigo border-opacity-25", // Custom if defined, else fallback to primary
+    "bg-pink bg-opacity-10 text-pink border-pink border-opacity-25",     // Custom if defined
+    "bg-teal bg-opacity-10 text-teal border-teal border-opacity-25"      // Custom if defined
+  ];
+  
+  let hash = 0;
+  for (let i = 0; i < cat.length; i++) {
+    hash = cat.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
 };
 
 // (เพิ่มใหม่) ฟังก์ชันแปลง URL รูปภาพให้ถูกต้อง (แก้ปัญหา Localhost)
