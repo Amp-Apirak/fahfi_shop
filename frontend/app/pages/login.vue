@@ -93,7 +93,7 @@ const handleLogin = async () => {
     });
 
     login(response.data.token, response.data.user);
-    window.location.href = "/";
+    await navigateTo('/');
   } catch (error) {
     console.error("Login failed:", error);
     errorMessage.value = "ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง";

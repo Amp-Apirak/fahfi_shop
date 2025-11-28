@@ -20,13 +20,6 @@
       </div>
 
       <div class="card-body">
-        <!-- Search Bar -->
-        <div class="mb-3">
-          <div class="input-group">
-            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
-            <input type="text" class="form-control" v-model="searchQuery" placeholder="ค้นหาสินค้า (ชื่อ, หมวดหมู่, รายละเอียด)...">
-          </div>
-        </div>
         <div v-if="pending" class="text-center py-5">
           <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
@@ -38,20 +31,20 @@
           <table class="table table-hover align-middle">
             <thead class="table-light">
               <tr>
-                <th class="text-center cursor-pointer" style="width: 80px;" @click="sortBy('id')">ID <i class="fas" :class="getSortIcon('id')"></i></th>
+                <th class="text-center" style="width: 80px;">ID</th>
                 <th class="text-center" style="width: 100px;">รูปภาพ</th>
-                <th class="cursor-pointer" @click="sortBy('name')">ชื่อสินค้า <i class="fas" :class="getSortIcon('name')"></i></th>
-                <th class="cursor-pointer" @click="sortBy('category')">หมวดหมู่ <i class="fas" :class="getSortIcon('category')"></i></th>
-                <th class="text-end cursor-pointer" @click="sortBy('sell_price')">ราคาขาย <i class="fas" :class="getSortIcon('sell_price')"></i></th>
-                <th class="text-center cursor-pointer" @click="sortBy('stock_quantity')">สต็อก <i class="fas" :class="getSortIcon('stock_quantity')"></i></th>
+                <th>ชื่อสินค้า</th>
+                <th>หมวดหมู่</th>
+                <th class="text-end">ราคาขาย</th>
+                <th class="text-center">สต็อก</th>
                 <th class="text-center" style="width: 120px;">การจัดการ</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-if="!filteredProducts || filteredProducts.length === 0">
+              <tr v-if="!products || products.length === 0">
                 <td colspan="7" class="text-center text-muted py-4">ไม่พบข้อมูลสินค้า</td>
               </tr>
-              <tr v-for="product in filteredProducts" :key="product.id">
+              <tr v-for="product in products" :key="product.id">
                 <td class="text-center">{{ product.id }}</td>
                 <td class="text-center">
                   <div class="product-image-cell">
@@ -214,7 +207,7 @@
 <script setup>
 // 1. Imports
 import axios from "axios";
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import Swal from "sweetalert2";
 // (เรา "ไม่" import { Modal } from 'bootstrap' ที่นี่ เพื่อป้องกัน Error ฝั่ง Server (SSR))
 
@@ -229,70 +222,6 @@ const pending = ref(true); // สถานะกำลังโหลด (สำ
 const error = ref(null);
 const token = useCookie("token");
 const { handleApiError } = useApiError();
-
-// Search & Sort State
-const searchQuery = ref("");
-const sortKey = ref("id");
-const sortOrder = ref("desc");
-
-const filteredProducts = computed(() => {
-  if (!products.value) return [];
-  
-  let result = [...products.value];
-
-  // Search
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    result = result.filter(p => 
-      p.name.toLowerCase().includes(query) ||
-      (p.category && p.category.toLowerCase().includes(query)) ||
-      (p.details && p.details.toLowerCase().includes(query)) ||
-      p.id.toString().includes(query)
-    );
-  }
-
-  // Sort
-  if (sortKey.value) {
-    result.sort((a, b) => {
-      let modifier = sortOrder.value === "asc" ? 1 : -1;
-      let valA = a[sortKey.value];
-      let valB = b[sortKey.value];
-      
-      // Handle nulls
-      if (valA === null) valA = "";
-      if (valB === null) valB = "";
-
-      // Check if numbers
-      if (!isNaN(valA) && !isNaN(valB) && valA !== "" && valB !== "") {
-          valA = Number(valA);
-          valB = Number(valB);
-      } else {
-          valA = valA.toString().toLowerCase();
-          valB = valB.toString().toLowerCase();
-      }
-
-      if (valA < valB) return -1 * modifier;
-      if (valA > valB) return 1 * modifier;
-      return 0;
-    });
-  }
-
-  return result;
-});
-
-const sortBy = (key) => {
-  if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-  } else {
-    sortKey.value = key;
-    sortOrder.value = "asc";
-  }
-};
-
-const getSortIcon = (key) => {
-  if (sortKey.value !== key) return "fa-sort text-muted opacity-25";
-  return sortOrder.value === "asc" ? "fa-sort-up text-primary" : "fa-sort-down text-primary";
-};
 
 // 4. ตัวแปร State สำหรับ Modal (กล่องเด้ง)
 const modalMode = ref("add"); // 'add' หรือ 'edit'
@@ -806,14 +735,5 @@ const handleDelete = async (productId, productName) => {
 .action-btn-edit i,
 .action-btn-delete i {
   font-size: 16px;
-}
-
-.cursor-pointer {
-  cursor: pointer;
-  user-select: none;
-}
-
-.cursor-pointer:hover {
-  background-color: #f1f5f9;
 }
 </style>
