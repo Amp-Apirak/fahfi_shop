@@ -106,22 +106,22 @@
           <table class="table table-hover align-middle mb-0">
             <thead class="bg-light">
               <tr>
-                <th class="py-3 ps-4 cursor-pointer" @click="sortBy('id')">บิล ID <i class="fas" :class="getSortIcon('id')"></i></th>
-                <th class="py-3 cursor-pointer" @click="sortBy('sale_date')">วันที่ขาย <i class="fas" :class="getSortIcon('sale_date')"></i></th>
-                <th class="py-3 text-end cursor-pointer" @click="sortBy('total_amount')">ยอดรวมสุทธิ <i class="fas" :class="getSortIcon('total_amount')"></i></th>
-                <th class="py-3 text-end cursor-pointer" @click="sortBy('discount')">ส่วนลด <i class="fas" :class="getSortIcon('discount')"></i></th>
-                <th class="py-3 text-center cursor-pointer" @click="sortBy('created_by_username')">ผู้ขาย <i class="fas" :class="getSortIcon('created_by_username')"></i></th>
+                <th class="py-3 ps-4">บิล ID</th>
+                <th class="py-3">วันที่ขาย</th>
+                <th class="py-3 text-end">ยอดรวมสุทธิ</th>
+                <th class="py-3 text-end">ส่วนลด</th>
+                <th class="py-3 text-center">ผู้ขาย</th>
                 <th class="py-3 text-center pe-4">การจัดการ</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-if="sortedSales && sortedSales.length === 0">
+              <tr v-if="sales && sales.length === 0">
                 <td colspan="6" class="text-center py-5 text-muted">
                   <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i>
                   <p>ไม่พบข้อมูลการขายในช่วงเวลานี้</p>
                 </td>
               </tr>
-              <tr v-for="sale in sortedSales" :key="sale.id">
+              <tr v-for="sale in sales" :key="sale.id">
                 <td class="ps-4 fw-bold text-primary">#{{ sale.id }}</td>
                 <td>
                   <div class="d-flex flex-column">
@@ -254,52 +254,6 @@ const filters = ref({
   endDate: "",
   search: "",
 });
-
-// Sort State
-const sortKey = ref("id");
-const sortOrder = ref("desc");
-
-const sortedSales = computed(() => {
-  if (!sales.value) return [];
-  
-  let result = [...sales.value];
-
-  if (sortKey.value) {
-    result.sort((a, b) => {
-      let modifier = sortOrder.value === "asc" ? 1 : -1;
-      let valA = a[sortKey.value];
-      let valB = b[sortKey.value];
-
-      // Handle numbers
-      if (!isNaN(valA) && !isNaN(valB)) {
-          valA = Number(valA);
-          valB = Number(valB);
-      } else {
-          valA = valA ? valA.toString().toLowerCase() : "";
-          valB = valB ? valB.toString().toLowerCase() : "";
-      }
-
-      if (valA < valB) return -1 * modifier;
-      if (valA > valB) return 1 * modifier;
-      return 0;
-    });
-  }
-  return result;
-});
-
-const sortBy = (key) => {
-  if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-  } else {
-    sortKey.value = key;
-    sortOrder.value = "asc";
-  }
-};
-
-const getSortIcon = (key) => {
-  if (sortKey.value !== key) return "fa-sort text-muted opacity-25";
-  return sortOrder.value === "asc" ? "fa-sort-up text-primary" : "fa-sort-down text-primary";
-};
 
 // Summary Stats
 const totalSales = computed(() => {

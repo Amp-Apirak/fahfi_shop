@@ -39,22 +39,22 @@
               <table class="table table-hover align-middle">
                 <thead class="table-light sticky-top">
                   <tr>
-                    <th class="text-center cursor-pointer" style="width: 80px" @click="sortBy('id')">ID <i class="fas" :class="getSortIcon('id')"></i></th>
+                    <th class="text-center" style="width: 80px">ID</th>
                     <th class="text-center" style="width: 100px">รูปภาพ</th>
-                    <th class="cursor-pointer" @click="sortBy('name')">ชื่อสินค้า <i class="fas" :class="getSortIcon('name')"></i></th>
-                    <th class="text-center cursor-pointer" @click="sortBy('category')">หมวดหมู่ <i class="fas" :class="getSortIcon('category')"></i></th>
-                    <th class="text-end cursor-pointer" @click="sortBy('sell_price')">ราคาขาย <i class="fas" :class="getSortIcon('sell_price')"></i></th>
-                    <th class="text-center cursor-pointer" @click="sortBy('stock_quantity')">สต็อก <i class="fas" :class="getSortIcon('stock_quantity')"></i></th>
+                    <th>ชื่อสินค้า</th>
+                    <th class="text-center">หมวดหมู่</th>
+                    <th class="text-end">ราคาขาย</th>
+                    <th class="text-center">สต็อก</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-if="!sortedProducts || sortedProducts.length === 0">
+                  <tr v-if="!products || products.length === 0">
                     <td colspan="6" class="text-center text-muted py-4">
                       ไม่พบข้อมูลสินค้า
                     </td>
                   </tr>
                   <tr
-                    v-for="product in sortedProducts"
+                    v-for="product in products"
                     :key="product.id"
                     :class="{
                       'table-secondary': product.stock_quantity <= 0,
@@ -488,52 +488,6 @@ const products = ref([]);
 const pending = ref(true);
 const error = ref(null);
 
-// Sort State
-const sortKey = ref("id");
-const sortOrder = ref("asc");
-
-const sortedProducts = computed(() => {
-  if (!products.value) return [];
-  
-  let result = [...products.value];
-
-  if (sortKey.value) {
-    result.sort((a, b) => {
-      let modifier = sortOrder.value === "asc" ? 1 : -1;
-      let valA = a[sortKey.value];
-      let valB = b[sortKey.value];
-
-      // Handle numbers
-      if (!isNaN(valA) && !isNaN(valB)) {
-          valA = Number(valA);
-          valB = Number(valB);
-      } else {
-          valA = valA ? valA.toString().toLowerCase() : "";
-          valB = valB ? valB.toString().toLowerCase() : "";
-      }
-
-      if (valA < valB) return -1 * modifier;
-      if (valA > valB) return 1 * modifier;
-      return 0;
-    });
-  }
-  return result;
-});
-
-const sortBy = (key) => {
-  if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-  } else {
-    sortKey.value = key;
-    sortOrder.value = "asc";
-  }
-};
-
-const getSortIcon = (key) => {
-  if (sortKey.value !== key) return "fa-sort text-muted opacity-25";
-  return sortOrder.value === "asc" ? "fa-sort-up text-primary" : "fa-sort-down text-primary";
-};
-
 // 3. State สำหรับ "ตะกร้าสินค้า" (ฝั่งขวา)
 const cart = ref([]); // นี่คือหัวใจของหน้านี้
 const globalDiscount = ref(0); // ส่วนลดท้ายบิล
@@ -781,15 +735,6 @@ const formatImageUrl = (url) => {
 
 .table tbody tr.cursor-pointer-row {
   cursor: pointer;
-}
-
-.cursor-pointer {
-  cursor: pointer;
-  user-select: none;
-}
-
-.cursor-pointer:hover {
-  background-color: #f1f5f9;
 }
 
 .table tbody tr.cursor-pointer-row:hover {
