@@ -68,17 +68,17 @@ const showDrawer = ref(false)
 
 const menuItems = computed(() => {
   const baseItems = [
-    { id: 1, label: 'ภาพรวม (AI)', icon: 'chart-pie', route: '/' },
+    { id: 1, label: 'ภาพรวม', icon: 'chart-pie', route: '/' },
     { id: 2, label: 'ขายหน้าร้าน', icon: 'shopping-cart', route: '/pos' },
   ]
 
   // Admin only items
   if (isAdmin.value) {
     baseItems.push(
-      { id: 3, label: 'สต็อกสินค้า (AI)', icon: 'box', route: '/products' },
-      { id: 4, label: 'ประวัติการขาย', icon: 'history', route: '/sales-history' },
-      { id: 5, label: 'บันทึกรายจ่าย', icon: 'hand-holding-dollar', route: '/expenses' },
-      { id: 6, label: 'เงินลงทุน', icon: 'coins', route: '/capital' }
+      { id: 3, label: 'บันทึกรายจ่าย', icon: 'hand-holding-dollar', route: '/expenses' },
+      { id: 4, label: 'สต็อกสินค้า', icon: 'box', route: '/products' },
+      { id: 5, label: 'เงินลงทุน', icon: 'coins', route: '/capital' },
+      { id: 6, label: 'ประวัติการขาย', icon: 'history', route: '/sales-history' }
     )
   }
 

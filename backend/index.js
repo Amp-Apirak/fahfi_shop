@@ -1953,6 +1953,15 @@ app.get("/api/dashboard/summary", authenticateToken, async (req, res) => {
     console.log("Items Sold:", itemsSoldData[0].totalItemsSold);
     console.log("-------------------------------");
 
+    // 4.4 ยอดส่วนลดรวม (Total Discount)
+    let discountQuery = `SELECT SUM(discount) AS totalDiscount FROM sales WHERE 1=1`;
+    if (startDate && endDate) {
+      discountQuery += ` AND DATE(sale_date) BETWEEN ? AND ?`;
+    }
+    const [discountData] = await db.promise().query(discountQuery, dateParams);
+    console.log("Discount Query Result:", discountData);
+    const totalDiscountNum = Number(discountData[0].totalDiscount || 0);
+
     const summary = {
       dateRange: {
         startDate: startDate || new Date().toISOString().split('T')[0],
@@ -1964,6 +1973,7 @@ app.get("/api/dashboard/summary", authenticateToken, async (req, res) => {
       grossProfit: grossProfit, // กำไรขั้นต้น
       netProfit: netProfitFinal, // กำไรสุทธิ (แทน profit เดิม)
       profit: netProfitFinal, // (Legacy support)
+      totalDiscount: totalDiscountNum, // (New) ยอดส่วนลดรวม
       totalOrders: ordersToday[0].totalOrders || 0,
       totalBills: ordersToday[0].totalOrders || 0,
       totalProducts: totalProductsData[0].totalProducts || 0,
@@ -2108,6 +2118,14 @@ app.get("/api/dashboard/charts", authenticateToken, async (req, res) => {
     }
     const [itemsSoldData] = await db.promise().query(itemsSoldQuery, salesParams);
 
+    // 4.4 ยอดส่วนลดรวม (Total Discount)
+    let discountQuery = `SELECT SUM(discount) AS totalDiscount FROM sales WHERE 1=1`;
+    if (startDate && endDate) {
+      discountQuery += ` AND DATE(sale_date) BETWEEN ? AND ?`;
+    }
+    const [discountData] = await db.promise().query(discountQuery, salesParams);
+    const totalDiscountNum = Number(discountData[0].totalDiscount || 0);
+
     // Calculate Financials
     const totalSalesNum = Number(salesSummary[0]?.totalSales || 0);
     const totalExpensesNum = Number(expensesSummary[0]?.totalExpenses || 0);
@@ -2247,6 +2265,7 @@ app.get("/api/dashboard/charts", authenticateToken, async (req, res) => {
         netProfit: netProfitFinal,
         profit: netProfitFinal, // Legacy
         totalItemsSold: Number(itemsSoldData[0]?.totalItemsSold || 0),
+        totalDiscount: totalDiscountNum, // (New)
         totalOrders: orderCount[0]?.totalOrders || 0,
         totalProducts: productCount[0]?.totalProducts || 0
       },

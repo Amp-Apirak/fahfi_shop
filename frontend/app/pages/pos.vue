@@ -693,6 +693,7 @@ const removeFromCart = (index) => {
 const clearCart = () => {
   if (window.confirm("คุณแน่ใจหรือไม่ว่าต้องการล้างตะกร้า?")) {
     cart.value = [];
+    globalDiscount.value = 0; // Reset discount
     saleError.value = null;
   }
 };
@@ -710,8 +711,17 @@ const updateQuantity = (item) => {
 
 // ฟังก์ชันคำนวณส่วนลดท้ายบิล
 const applyGlobalDiscount = (percent) => {
-  const discount = subtotal.value * (percent / 100);
-  globalDiscount.value = parseFloat(discount.toFixed(2));
+  // 1. คำนวณยอดสุทธิก่อนปัดเศษ (Raw Net Total)
+  const rawDiscount = subtotal.value * (percent / 100);
+  const rawNetTotal = subtotal.value - rawDiscount;
+
+  // 2. ปัดเศษยอดสุทธิให้ลงท้ายด้วย 0 หรือ 5 (ปัดทิ้ง / Floor)
+  // เช่น 134.83 -> 130, 129.27 -> 125
+  const targetNetTotal = Math.floor(rawNetTotal / 5) * 5;
+
+  // 3. คำนวณส่วนลดที่ต้องใช้เพื่อให้ได้ยอดสุทธินั้น
+  // ส่วนลด = ยอดรวม - ยอดสุทธิเป้าหมาย
+  globalDiscount.value = Math.max(0, subtotal.value - targetNetTotal);
 };
 
 // ฟังก์ชันคำนวณรวมต่อรายการ
