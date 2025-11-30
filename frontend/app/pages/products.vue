@@ -13,9 +13,14 @@
           <h2 class="h4 mb-0 text-primary-emphasis">
             <i class="fas fa-box-open me-2"></i>จัดการสต็อกสินค้า
           </h2>
-          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal" @click="openAddModal">
-            <i class="fas fa-plus me-2"></i>เพิ่มสินค้าใหม่
-          </button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal" @click="openAddModal">
+              <i class="fas fa-plus me-2"></i>เพิ่มสินค้าใหม่
+            </button>
+            <button class="btn btn-success" @click="openSackOpener">
+              <i class="fas fa-box-open me-2"></i>เปิดกระสอบ
+            </button>
+          </div>
         </div>
       </div>
 
@@ -38,13 +43,13 @@
           <table class="table table-hover align-middle">
             <thead class="table-light">
               <tr>
-                <th class="text-center cursor-pointer" style="width: 80px;" @click="sortBy('id')">ID <i class="fas" :class="getSortIcon('id')"></i></th>
-                <th class="text-center" style="width: 100px;">รูปภาพ</th>
-                <th class="cursor-pointer" @click="sortBy('name')">ชื่อสินค้า <i class="fas" :class="getSortIcon('name')"></i></th>
-                <th class="cursor-pointer" @click="sortBy('category')">หมวดหมู่ <i class="fas" :class="getSortIcon('category')"></i></th>
-                <th class="text-end cursor-pointer" @click="sortBy('sell_price')">ราคาขาย <i class="fas" :class="getSortIcon('sell_price')"></i></th>
-                <th class="text-center cursor-pointer" @click="sortBy('stock_quantity')">สต็อก <i class="fas" :class="getSortIcon('stock_quantity')"></i></th>
-                <th class="text-center" style="width: 120px;">การจัดการ</th>
+                <th class="text-center cursor-pointer text-nowrap" style="width: 80px;" @click="sortBy('id')">ID <i class="fas" :class="getSortIcon('id')"></i></th>
+                <th class="text-center text-nowrap" style="width: 100px;">รูปภาพ</th>
+                <th class="cursor-pointer text-nowrap" @click="sortBy('name')">ชื่อสินค้า <i class="fas" :class="getSortIcon('name')"></i></th>
+                <th class="cursor-pointer text-nowrap" @click="sortBy('category')">หมวดหมู่ <i class="fas" :class="getSortIcon('category')"></i></th>
+                <th class="text-end cursor-pointer text-nowrap" @click="sortBy('sell_price')">ราคาขาย <i class="fas" :class="getSortIcon('sell_price')"></i></th>
+                <th class="text-center cursor-pointer text-nowrap" @click="sortBy('stock_quantity')">สต็อก <i class="fas" :class="getSortIcon('stock_quantity')"></i></th>
+                <th class="text-center text-nowrap" style="width: 120px;">การจัดการ</th>
               </tr>
             </thead>
             <tbody>
@@ -74,9 +79,9 @@
                     </div>
                   </div>
                 </td>
-                <td>
+                <td class="text-nowrap">
                   <h6 class="mb-0">{{ product.name }}</h6>
-                  <small v-if="product.details" class="text-muted">{{ product.details }}</small>
+                  <small v-if="product.details" class="text-muted text-wrap d-block" style="max-width: 200px;">{{ product.details }}</small>
                 </td>
                 <td><span class="badge border" :class="getCategoryColor(product.category)">{{ product.category }}</span></td>
                 <td class="text-end">฿{{ product.sell_price.toLocaleString() }}</td>
@@ -84,6 +89,12 @@
                 <td class="text-center">
                   <button class="btn btn-sm btn-outline-primary border-0 me-2 action-btn-edit" title="แก้ไข" data-bs-toggle="modal" data-bs-target="#productModal" @click="openEditModal(product)">
                     <i class="fas fa-pen-to-square"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-success border-0 me-2" title="เติมของ (Stock In)" data-bs-toggle="modal" data-bs-target="#stockInModal" @click="openStockInModal(product)">
+                    <i class="fas fa-boxes-stacked"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-info border-0 me-2" title="ประวัติสต็อก" @click="openHistoryModal(product)">
+                    <i class="fas fa-history"></i>
                   </button>
                   <button class="btn btn-sm btn-outline-danger border-0 action-btn-delete" title="ลบ" @click="handleDelete(product.id, product.name)">
                     <i class="fas fa-trash"></i>
@@ -95,8 +106,10 @@
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Modal (structure from original file is preserved to ensure functionality) -->
+  <Teleport to="body">
+    <!-- Product Modal -->
     <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -123,18 +136,28 @@
                 </div>
               </div>
               <div class="row">
-                <div class="col-md-4 mb-3">
+                <!-- Cost Price: Show only in Edit mode -->
+                <div class="col-md-4 mb-3" v-if="modalMode === 'edit'">
                   <label for="cost_price" class="form-label">ราคาต้นทุน</label>
                   <input type="number" step="0.01" class="form-control" v-model="currentProduct.cost_price" />
                 </div>
+
                 <div class="col-md-4 mb-3">
-                  <label for="sell_price" class="form-label">ราคาขาย</label>
+                  <label for="sell_price" class="form-label">ราคาขาย <span class="text-danger">*</span></label>
                   <input type="number" step="0.01" class="form-control" v-model="currentProduct.sell_price" required />
                 </div>
-                <div class="col-md-4 mb-3">
+
+                <!-- Stock: Show only in Edit mode -->
+                <div class="col-md-4 mb-3" v-if="modalMode === 'edit'">
                   <label for="stock_quantity" class="form-label">สต็อก</label>
                   <input type="number" class="form-control" v-model="currentProduct.stock_quantity" />
                 </div>
+              </div>
+
+              <!-- Workflow Hint for Add Mode -->
+              <div v-if="modalMode === 'add'" class="alert alert-info py-2 small">
+                <i class="fas fa-info-circle me-1"></i>
+                สต็อกและต้นทุน ให้ไปเพิ่มที่ปุ่ม <strong>"Stock In (สีเขียว)"</strong> หลังจากสร้างสินค้าเสร็จแล้ว
               </div>
               <div class="mb-3">
                 <label for="details" class="form-label">รายละเอียด</label>
@@ -208,11 +231,111 @@
         </div>
       </div>
     </div>
-  </div>
+
+    <!-- Stock In Modal -->
+    <div class="modal fade" id="stockInModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-success text-white">
+            <h5 class="modal-title"><i class="fas fa-boxes-stacked me-2"></i>เติมสินค้า (Stock In)</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div v-if="stockInProduct" class="mb-4 p-3 bg-light rounded border">
+              <h6 class="mb-1 text-primary">{{ stockInProduct.name }}</h6>
+              <div class="d-flex justify-content-between text-muted small">
+                <span>คงเหลือ: <strong>{{ stockInProduct.stock_quantity }}</strong> ชิ้น</span>
+                <span>ทุนเดิม: <strong>{{ stockInProduct.cost_price }}</strong> บาท/ชิ้น</span>
+              </div>
+            </div>
+
+            <!-- Mode Toggle -->
+            <ul class="nav nav-pills nav-fill mb-3" id="stockInModeTab" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" :class="{ active: stockInMode === 'unit' }" @click="stockInMode = 'unit'" type="button">
+                  <i class="fas fa-box me-1"></i> รายชิ้น (Unit)
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" :class="{ active: stockInMode === 'sack' }" @click="stockInMode = 'sack'" type="button">
+                  <i class="fas fa-sack-dollar me-1"></i> งานกระสอบ (Sack)
+                </button>
+              </li>
+            </ul>
+
+            <form @submit.prevent="handleStockInSubmit">
+              <!-- Unit Mode Inputs -->
+              <div v-if="stockInMode === 'unit'">
+                <div class="mb-3">
+                  <label class="form-label">จำนวนที่รับเข้า (ชิ้น)</label>
+                  <input type="number" class="form-control" v-model.number="stockInForm.quantity" min="1" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">ต้นทุนต่อชิ้น (บาท)</label>
+                  <input type="number" class="form-control" v-model.number="stockInForm.cost_price" min="0" step="0.01" required>
+                </div>
+              </div>
+
+              <!-- Sack Mode Inputs -->
+              <div v-else>
+                <div class="row">
+                  <div class="col-6 mb-3">
+                    <label class="form-label">ค่ากระสอบ (บาท)</label>
+                    <input type="number" class="form-control" v-model.number="stockInForm.sack_price" min="0" required>
+                  </div>
+                  <div class="col-6 mb-3">
+                    <label class="form-label">ค่าซัก/ขนส่ง (บาท)</label>
+                    <input type="number" class="form-control" v-model.number="stockInForm.extra_cost" min="0">
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">จำนวนที่คัดได้ (ชิ้น)</label>
+                  <input type="number" class="form-control" v-model.number="stockInForm.quantity" min="1" required>
+                </div>
+                
+                <!-- Calculator Result -->
+                <div class="alert alert-info d-flex justify-content-between align-items-center">
+                  <span><i class="fas fa-calculator me-2"></i>ต้นทุนเฉลี่ย:</span>
+                  <span class="h5 mb-0">{{ calculateSackCost }} บาท/ชิ้น</span>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">หมายเหตุ (Optional)</label>
+                <input type="text" class="form-control" v-model="stockInForm.reason" placeholder="เช่น ล็อต 1/2024, ซื้อจากร้าน A">
+              </div>
+
+              <div class="modal-footer px-0 pb-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="submit" class="btn btn-success">
+                  <i class="fas fa-save me-2"></i>บันทึกรับของ
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sack Opener Modal -->
+    <SackOpenerModal
+      ref="sackOpenerModalRef"
+      :products="products || []"
+      @close="closeSackOpener"
+      @submit="handleSackSubmit"
+    />
+
+    <!-- Stock History Modal -->
+    <StockHistoryModal 
+      :product-id="historyProductId" 
+      :product-name="historyProductName" 
+      :current-stock="historyCurrentStock"
+      @refresh="fetchProducts"
+    />
+  </Teleport>
 </template>
 
 <script setup>
-// 1. Imports
 import axios from "axios";
 import { ref, onMounted, computed } from "vue";
 import Swal from "sweetalert2";
@@ -299,6 +422,17 @@ const modalMode = ref("add"); // 'add' หรือ 'edit'
 const modalError = ref(null);
 const uploadingImage = ref(false); // สถานะการอัปโหลดรูปภาพ
 const imagePreview = ref(null); // Preview รูปภาพที่เลือก
+
+// Stock In State
+const stockInProduct = ref(null);
+const stockInMode = ref('unit'); // 'unit' or 'sack'
+const stockInForm = ref({
+  quantity: 1,
+  cost_price: 0,
+  sack_price: 0,
+  extra_cost: 0,
+  reason: ''
+});
 
 // (นี่คือ "พิมพ์เขียว" หรือ "กล่องเปล่า" สำหรับฟอร์ม)
 const defaultProductForm = {
@@ -606,7 +740,7 @@ const getCategoryColor = (category) => {
   
   // Shirts/Tops (Blue/Info)
   if (cat.includes("เสื้อ") || cat.includes("top")) {
-      return "bg-info bg-opacity-10 text-info border-info border-opacity-25";
+      return "bg-primary bg-opacity-10 text-primary border-primary border-opacity-25";
   } 
   // Pants/Skirts (Green/Success)
   else if (cat.includes("กางเกง") || cat.includes("กระโปรง") || cat.includes("bottom")) {
@@ -689,6 +823,208 @@ const handleDelete = async (productId, productName) => {
       confirmButtonText: "ตกลง",
       confirmButtonColor: "#ef4444",
     });
+  }
+};
+
+
+// 9. Stock In Logic
+const openStockInModal = (product) => {
+  stockInProduct.value = product;
+  stockInMode.value = 'unit'; // Default to unit
+  stockInForm.value = {
+    quantity: 1,
+    cost_price: product.cost_price || 0, // Default to current cost
+    sack_price: 0,
+    extra_cost: 0,
+    reason: ''
+  };
+};
+
+const calculateSackCost = computed(() => {
+  if (stockInForm.value.quantity <= 0) return 0;
+  const totalCost = (stockInForm.value.sack_price || 0) + (stockInForm.value.extra_cost || 0);
+  return (totalCost / stockInForm.value.quantity).toFixed(2);
+});
+
+const handleStockInSubmit = async () => {
+  if (!stockInProduct.value) return;
+
+  // Determine final cost per unit
+  let finalCost = 0;
+  if (stockInMode.value === 'unit') {
+    finalCost = stockInForm.value.cost_price;
+  } else {
+    finalCost = Number(calculateSackCost.value);
+  }
+
+  try {
+    const payload = {
+      quantity: stockInForm.value.quantity,
+      cost_price: finalCost,
+      reason: stockInForm.value.reason
+    };
+
+    console.log('📦 Stock In Payload:', payload);
+
+    await axios.post(
+      `/api/products/${stockInProduct.value.id}/stock-in`,
+      payload,
+      { headers: { Authorization: `Bearer ${token.value}` } }
+    );
+
+    // Success
+    await Swal.fire({
+      icon: 'success',
+      title: 'รับสินค้าสำเร็จ',
+      text: `เพิ่มสต็อก ${payload.quantity} ชิ้น (ต้นทุน ${finalCost} บ./ชิ้น)`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    // Close Modal (Robust Way)
+    const modalElement = document.getElementById('stockInModal');
+    if (modalElement) {
+      try {
+        // 1. Try Bootstrap Instance
+        const modal = window.bootstrap?.Modal.getInstance(modalElement);
+        if (modal) {
+          modal.hide();
+        } else {
+          // 2. Fallback: jQuery
+          if (typeof $ !== 'undefined' && $.fn.modal) {
+            $(modalElement).modal('hide');
+          } else {
+            // 3. Fallback: Manual CSS
+            modalElement.classList.remove('show');
+            modalElement.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+          }
+        }
+        
+        // Ensure backdrop is removed even if modal.hide() was called
+        setTimeout(() => {
+          const backdrops = document.querySelectorAll('.modal-backdrop');
+          if (backdrops.length > 0) {
+            backdrops.forEach(backdrop => backdrop.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+          }
+        }, 500);
+
+      } catch (e) {
+        console.error('Error closing modal:', e);
+      }
+    }
+
+    // Refresh Data
+    await fetchProducts();
+
+  } catch (err) {
+    console.error('❌ Stock In Error:', err);
+    Swal.fire({
+      icon: 'error',
+      title: 'เกิดข้อผิดพลาด',
+      text: err.response?.data?.message || 'ไม่สามารถบันทึกได้รับสินค้า'
+    });
+  }
+};
+
+
+// 10. Sack Opener Logic
+const sackOpenerModalRef = ref(null);
+
+const openSackOpener = () => {
+  const modalElement = document.getElementById('sackOpenerModal');
+  if (modalElement && window.bootstrap) {
+    const modal = new window.bootstrap.Modal(modalElement);
+    modal.show();
+    if (sackOpenerModalRef.value) {
+      sackOpenerModalRef.value.resetForm();
+    }
+  }
+};
+
+const closeSackOpener = () => {
+  const modalElement = document.getElementById('sackOpenerModal');
+  if (modalElement && window.bootstrap) {
+    const modal = window.bootstrap.Modal.getInstance(modalElement);
+    if (modal) modal.hide();
+  }
+};
+
+const handleSackSubmit = async (payload) => {
+  console.log('📦 Sack Submit Payload:', payload);
+  
+  // Close modal first
+  closeSackOpener();
+
+  // Show loading
+  Swal.fire({
+    title: 'กำลังบันทึก...',
+    text: 'กำลังกระจายสินค้าลงสต็อก',
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+
+  try {
+    // Loop through items and send requests (Parallel)
+    const promises = payload.items.map(item => {
+      return axios.post(
+        `/api/products/${item.product_id}/stock-in`,
+        {
+          quantity: item.quantity,
+          cost_price: item.cost_price,
+          reason: payload.note
+        },
+        { headers: { Authorization: `Bearer ${token.value}` } }
+      );
+    });
+
+    await Promise.all(promises);
+
+    // Success
+    await Swal.fire({
+      icon: 'success',
+      title: 'บันทึกสำเร็จ!',
+      text: `นำเข้าสินค้า ${payload.total_quantity} ชิ้น เรียบร้อยแล้ว`,
+      timer: 2000
+    });
+
+    // Refresh products
+    await fetchProducts();
+
+  } catch (err) {
+    console.error('❌ Sack Submit Error:', err);
+    await Swal.fire({
+      icon: 'error',
+      title: 'เกิดข้อผิดพลาด',
+      text: 'บางรายการอาจบันทึกไม่สำเร็จ กรุณาตรวจสอบ'
+    });
+  }
+};
+
+// 11. Stock History Logic
+const stockHistoryModalRef = ref(null);
+const historyProductId = ref(null);
+const historyProductName = ref('');
+const historyCurrentStock = ref(0);
+
+const openHistoryModal = (product) => {
+  historyProductId.value = product.id;
+  historyProductName.value = product.name;
+  historyCurrentStock.value = product.stock_quantity;
+  
+  const modalElement = document.getElementById('stockHistoryModal');
+  if (modalElement && window.bootstrap) {
+    const modal = new window.bootstrap.Modal(modalElement);
+    modal.show();
   }
 };
 </script>
