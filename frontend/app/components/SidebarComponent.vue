@@ -77,7 +77,8 @@ const menuItems = computed(() => {
     baseItems.push(
       { id: 3, label: 'สต็อกสินค้า (AI)', icon: 'box', route: '/products' },
       { id: 4, label: 'ประวัติการขาย', icon: 'history', route: '/sales-history' },
-      { id: 5, label: 'บันทึกรายจ่าย', icon: 'hand-holding-dollar', route: '/expenses' }
+      { id: 5, label: 'บันทึกรายจ่าย', icon: 'hand-holding-dollar', route: '/expenses' },
+      { id: 6, label: 'เงินลงทุน', icon: 'coins', route: '/capital' }
     )
   }
 
@@ -103,12 +104,15 @@ const toggleSidebar = () => {
 
 const closeDrawer = () => {
   showDrawer.value = false
+  // Sync state with HeaderComponent
+  localStorage.setItem('drawerOpen', 'false')
+  window.dispatchEvent(new Event('sidebarToggle'))
 }
 
 const handleMenuItemClick = () => {
-  // ปิด Drawer เมื่อคลิกเมนูไอเท็ม
-  if (isCollapsed.value && showDrawer.value) {
-    showDrawer.value = false
+  // ปิด Drawer เมื่อคลิกเมนูไอเท็ม (เฉพาะ Mobile)
+  if (isMobile.value) {
+    closeDrawer()
   }
 }
 
@@ -120,7 +124,10 @@ const checkScreenSize = () => {
   // Auto collapse on mobile
   if (isMobile.value) {
     isCollapsed.value = true
-    showDrawer.value = false  // ปิด Drawer ถ้ามีการเปลี่ยนขนาดจอ
+    showDrawer.value = false
+    // Ensure localStorage is synced to prevent double-click issue on reload
+    localStorage.setItem('drawerOpen', 'false')
+    window.dispatchEvent(new Event('sidebarToggle'))
   } else {
     // บน Desktop: Restore from localStorage (อนุญาติให้ user toggle)
     const saved = localStorage.getItem('sidebarCollapsed')

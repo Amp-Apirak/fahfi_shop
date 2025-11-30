@@ -195,14 +195,21 @@
 
                         <div class="d-flex align-items-center gap-2 mt-2">
                           <label class="form-label small mb-0 text-nowrap">จำนวน:</label>
-                          <input
-                            type="number"
-                            class="form-control form-control-sm"
-                            style="width: 100px;"
-                            v-model.number="item.quantity"
-                            min="1"
-                            @change="updateQuantity(item)"
-                          />
+                          <div class="input-group input-group-sm" style="width: 120px;">
+                            <button class="btn btn-outline-secondary" type="button" @click="decreaseQuantity(item)">
+                              <i class="fas fa-minus"></i>
+                            </button>
+                            <input
+                              type="number"
+                              class="form-control text-center"
+                              v-model.number="item.quantity"
+                              min="1"
+                              @change="updateQuantity(item)"
+                            />
+                            <button class="btn btn-outline-secondary" type="button" @click="increaseQuantity(item)">
+                              <i class="fas fa-plus"></i>
+                            </button>
+                          </div>
                         </div>
 
                       <div class="mt-2 pt-2 border-top">
@@ -252,10 +259,16 @@
                     <input type="number" class="form-control text-end" v-model.number="globalDiscount" min="0">
                   </div>
                 </div>
-                <div class="d-flex justify-content-end gap-1">
-                  <button class="btn btn-sm btn-outline-secondary" @click="applyGlobalDiscount(3)">3%</button>
-                  <button class="btn btn-sm btn-outline-secondary" @click="applyGlobalDiscount(7)">7%</button>
-                  <button class="btn btn-sm btn-outline-secondary" @click="applyGlobalDiscount(10)">10%</button>
+                <div class="row g-2">
+                  <div class="col-4">
+                    <button class="btn btn-sm btn-outline-secondary w-100" @click="applyGlobalDiscount(3)">3%</button>
+                  </div>
+                  <div class="col-4">
+                    <button class="btn btn-sm btn-outline-secondary w-100" @click="applyGlobalDiscount(7)">7%</button>
+                  </div>
+                  <div class="col-4">
+                    <button class="btn btn-sm btn-outline-secondary w-100" @click="applyGlobalDiscount(10)">10%</button>
+                  </div>
                 </div>
               </div>
 
@@ -269,12 +282,12 @@
                     class="form-check-input"
                     type="radio"
                     name="payment"
-                    id="payment-transfer"
-                    value="transfer"
+                    id="payment-cash"
+                    value="cash"
                     v-model="paymentMethod"
                   />
-                  <label class="form-check-label" for="payment-transfer">
-                    <i class="fas fa-bank me-2"></i>โอนจ่าย
+                  <label class="form-check-label" for="payment-cash">
+                    <i class="fas fa-money-bill-wave me-2"></i>เงินสด
                   </label>
                 </div>
                 <div class="form-check">
@@ -289,6 +302,23 @@
                   <label class="form-check-label" for="payment-qrcode">
                     <i class="fas fa-qrcode me-2"></i>สแกน QR Code
                   </label>
+                </div>
+
+                <!-- Payment Details (Show for ALL methods) -->
+                <div class="mt-3 border-top pt-3">
+                  <div class="mb-2">
+                    <label class="form-label small">รับเงินมา:</label>
+                    <div class="input-group">
+                      <span class="input-group-text">฿</span>
+                      <input type="number" class="form-control" v-model.number="receivedAmount" placeholder="0.00">
+                    </div>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">เงินทอน:</span>
+                    <span class="h5 mb-0" :class="changeAmount < 0 ? 'text-danger' : 'text-success'">
+                      ฿{{ changeAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -360,36 +390,51 @@
               <div
                 v-for="sale in recentSales"
                 :key="sale.id"
-                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-3 py-3"
+                class="list-group-item list-group-item-action px-3 py-3"
               >
-                <div>
-                  <div class="fw-bold text-dark mb-1">บิล #{{ sale.id }}</div>
-                  <div class="small text-secondary mb-1 text-truncate" style="max-width: 250px;">
-                    <i class="fas fa-box-open me-1 text-muted"></i>{{ sale.product_names || '-' }}
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div>
+                    <div class="fw-bold text-dark mb-1">
+                      บิล #{{ sale.id }} 
+                      <span class="badge bg-light text-dark border ms-1">{{ sale.created_by_username }}</span>
+                    </div>
+                    <div class="small text-secondary mb-1 text-truncate" style="max-width: 200px;">
+                      <i class="fas fa-box-open me-1 text-muted"></i>{{ sale.product_names || '-' }}
+                    </div>
+                    <div class="small text-muted">
+                      <span class="me-2"><i class="fas fa-layer-group me-1"></i>{{ sale.total_quantity || 0 }} ชิ้น</span>
+                      <span><i class="far fa-clock me-1"></i>{{ new Date(sale.sale_date).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) }}</span>
+                    </div>
                   </div>
-                  <small class="text-muted">
-                    <i class="far fa-clock me-1"></i>
-                    {{
-                      new Date(sale.sale_date).toLocaleTimeString("th-TH", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    }}
-                  </small>
-                  <span class="badge bg-light text-dark border ms-2">{{
-                    sale.created_by_username
-                  }}</span>
+                  <div class="text-end">
+                    <div class="fw-bold text-success fs-5">
+                      ฿{{ sale.total_amount.toLocaleString("th-TH") }}
+                    </div>
+                    <small v-if="sale.discount > 0" class="d-block text-danger" style="font-size: 0.75rem;">
+                      (ส่วนลด: {{ Number(sale.discount).toLocaleString("th-TH") }})
+                    </small>
+                  </div>
                 </div>
-                <div class="text-end">
-                  <div class="fw-bold text-success">
-                    ฿{{ sale.total_amount.toLocaleString("th-TH") }}
+                
+                <!-- Payment Details & Actions -->
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-2">
+                  <div class="small text-muted">
+                    <div v-if="sale.payment_method === 'cash'">
+                      รับ: {{ Number(sale.received_amount || 0).toLocaleString("th-TH") }} | 
+                      ทอน: {{ Number(sale.change_amount || 0).toLocaleString("th-TH") }}
+                    </div>
+                    <div v-else>
+                      <span class="badge bg-info text-dark"><i class="fas fa-qrcode me-1"></i>QR Code</span>
+                    </div>
                   </div>
-                  <small v-if="sale.discount > 0" class="d-block text-danger" style="font-size: 0.75rem;">
-                    (ส่วนลด: ฿{{ Number(sale.discount).toLocaleString("th-TH") }})
-                  </small>
-                  <small class="text-muted">{{
-                    new Date(sale.sale_date).toLocaleDateString("th-TH")
-                  }}</small>
+                  <div>
+                     <button class="btn btn-sm btn-outline-primary border-0 me-1" @click="editSale(sale)" title="แก้ไขบิล">
+                        <i class="fas fa-edit"></i>
+                     </button>
+                     <button class="btn btn-sm btn-outline-danger border-0" @click="deleteSale(sale.id)" title="ยกเลิกบิล">
+                        <i class="fas fa-trash-alt"></i>
+                     </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -543,10 +588,17 @@ const isSubmitting = ref(false); // สถานะกำลังบันท�
 const saleError = ref(null);
 
 // 4. State สำหรับการชำระเงิน
-const paymentMethod = ref("transfer"); // 'transfer' หรือ 'qrcode'
+const paymentMethod = ref("cash"); // 'cash' หรือ 'qrcode'
 const showPaymentModal = ref(false);
 const qrCodeData = ref(null); // ข้อมูล QR code สำหรับสแกน
 const merchantName = ref("Fahfi Shop"); // ชื่อร้านค้า
+const receivedAmount = ref(0); // เงินที่รับมา
+
+// คำนวณเงินทอน
+const changeAmount = computed(() => {
+  if (!receivedAmount.value || receivedAmount.value <= 0) return 0;
+  return receivedAmount.value - totalAmount.value;
+});
 
 // 5. State สำหรับ "ประวัติการขายล่าสุด" (New!)
 const recentSales = ref([]);
@@ -590,6 +642,21 @@ onMounted(() => {
   fetchProducts();
   fetchRecentSales(); // ดึงข้อมูลเมื่อเปิดหน้า
 });
+
+// Helper Functions for Quantity
+const increaseQuantity = (item) => {
+  if (item.quantity < item.stock) {
+    item.quantity++;
+  } else {
+    alert(`สต็อกไม่พอ! (มี ${item.stock} ชิ้น)`);
+  }
+};
+
+const decreaseQuantity = (item) => {
+  if (item.quantity > 1) {
+    item.quantity--;
+  }
+};
 
 // 5. ฟังก์ชันจัดการ "ตะกร้าสินค้า" (Cart)
 
@@ -700,6 +767,8 @@ const confirmPayment = async () => {
       totalAmount: finalAmount,
       globalDiscount: globalDiscount.value,
       paymentMethod: paymentMethod.value,
+      receivedAmount: receivedAmount.value, // ส่งยอดรับเงิน
+      changeAmount: changeAmount.value,     // ส่งยอดเงินทอน
     };
 
     // 2. ยิง API
@@ -746,7 +815,104 @@ const cancelQRPayment = () => {
   qrCodeData.value = null;
 };
 
-// Helper: Get Category Color Class
+// ฟังก์ชันลบบิล (Void)
+const deleteSale = async (saleId) => {
+  const result = await Swal.fire({
+    title: 'ยืนยันการยกเลิกบิล?',
+    text: `คุณต้องการยกเลิกบิล #${saleId} ใช่หรือไม่? (สต็อกจะถูกคืนกลับ)`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'ใช่, ยกเลิกบิล',
+    cancelButtonText: 'ไม่'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await axios.delete(`/api/sales/${saleId}`, {
+        headers: { Authorization: `Bearer ${token.value}` }
+      });
+      
+      await Swal.fire(
+        'ยกเลิกสำเร็จ!',
+        `บิล #${saleId} ถูกยกเลิกเรียบร้อยแล้ว`,
+        'success'
+      );
+      
+      // Refresh data
+      fetchRecentSales();
+      fetchProducts(); // Update stock
+      
+    } catch (err) {
+      console.error("Error deleting sale:", err);
+      Swal.fire(
+        'เกิดข้อผิดพลาด',
+        err.response?.data?.message || 'ไม่สามารถยกเลิกบิลได้',
+        'error'
+      );
+    }
+  }
+};
+
+// ฟังก์ชันแก้ไขบิล (ดึงกลับมาทำรายการใหม่)
+const editSale = async (sale) => {
+  const result = await Swal.fire({
+    title: 'แก้ไขบิล?',
+    text: `คุณต้องการดึงบิล #${sale.id} กลับมาแก้ไขในตะกร้าหรือไม่? (บิลเดิมจะถูกยกเลิกและสต็อกจะถูกคืน)`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'ใช่, ดึงข้อมูลกลับมา',
+    cancelButtonText: 'ไม่'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      // 1. ดึงรายละเอียดบิล
+      const response = await axios.get(`/api/sales/${sale.id}`, {
+        headers: { Authorization: `Bearer ${token.value}` }
+      });
+      const saleDetails = response.data; // สมมติว่า API นี้คืนรายละเอียดสินค้าด้วย
+
+      // 2. ตรวจสอบว่ามีสินค้าในตะกร้าอยู่แล้วหรือไม่
+      if (cart.value.length > 0) {
+        const confirmClear = await Swal.fire({
+          title: 'ตะกร้าไม่ว่าง',
+          text: 'มีสินค้าค้างอยู่ในตะกร้า ต้องการล้างตะกร้าเดิมและแทนที่ด้วยบิลนี้หรือไม่?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'แทนที่',
+          cancelButtonText: 'ยกเลิก'
+        });
+        if (!confirmClear.isConfirmed) return;
+      }
+
+      // 3. ยกเลิกบิลเดิม (คืนสต็อก)
+      await axios.delete(`/api/sales/${sale.id}`, {
+        headers: { Authorization: `Bearer ${token.value}` }
+      });
+
+      // 4. นำสินค้าเข้าตะกร้า
+      // หมายเหตุ: ต้อง map ข้อมูลให้ตรงกับโครงสร้าง cart
+      // เราอาจต้องดึงข้อมูลสินค้าล่าสุดเพื่อให้ได้ราคาและสต็อกปัจจุบัน
+      cart.value = [];
+      // (ส่วนนี้ต้องมีการจัดการข้อมูลที่ซับซ้อนขึ้นเล็กน้อย เพื่อให้แน่ใจว่าข้อมูลถูกต้อง)
+      // สำหรับตอนนี้ ให้ Redirect ไปหน้าประวัติการขายเพื่อแก้ไขจะปลอดภัยกว่า
+       await Swal.fire({
+        icon: 'info',
+        title: 'ไปที่หน้าประวัติการขาย',
+        text: 'ระบบจะนำคุณไปที่หน้าประวัติการขายเพื่อทำการแก้ไขรายละเอียด',
+        showConfirmButton: false,
+        timer: 1500
+      });
+      navigateTo('/sales-history');
+
+    } catch (err) {
+      console.error("Error editing sale:", err);
+      Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลบิลได้', 'error');
+    }
+  }
+};
 const getCategoryColor = (category) => {
   if (!category) return "bg-secondary bg-opacity-10 text-secondary border-secondary border-opacity-25";
   
@@ -754,13 +920,13 @@ const getCategoryColor = (category) => {
   
   // 1. Explicit Mappings (Common Categories)
   if (cat.includes("เสื้อ") || cat.includes("top") || cat.includes("shirt")) {
-      return "bg-info bg-opacity-10 text-info border-info border-opacity-25";
+      return "bg-primary bg-opacity-10 text-primary border-primary border-opacity-25"; // Changed to primary (blue)
   } 
   if (cat.includes("กางเกง") || cat.includes("bottom") || cat.includes("pant") || cat.includes("skirt")) {
       return "bg-success bg-opacity-10 text-success border-success border-opacity-25";
   } 
   if (cat.includes("ชุด") || cat.includes("set") || cat.includes("suit") || cat.includes("dress")) {
-      return "bg-primary bg-opacity-10 text-primary border-primary border-opacity-25";
+      return "bg-info bg-opacity-10 text-info border-info border-opacity-25"; // Changed to info (light blue)
   } 
   if (cat.includes("หมวก") || cat.includes("hat") || cat.includes("cap")) {
       return "bg-warning bg-opacity-10 text-warning border-warning border-opacity-25";
@@ -781,16 +947,13 @@ const getCategoryColor = (category) => {
   // 2. Hash-based Fallback for other categories
   // This ensures consistent colors for the same category name without manual mapping
   const colors = [
-    "bg-primary bg-opacity-10 text-primary border-primary border-opacity-25",
-    "bg-secondary bg-opacity-10 text-secondary border-secondary border-opacity-25",
+    "bg-primary bg-opacity-10 text-primary border-primary border-opacity-25", // Blue
+    "bg-info bg-opacity-10 text-info border-info border-opacity-25",       // Light Blue
     "bg-success bg-opacity-10 text-success border-success border-opacity-25",
     "bg-danger bg-opacity-10 text-danger border-danger border-opacity-25",
     "bg-warning bg-opacity-10 text-warning border-warning border-opacity-25",
-    "bg-info bg-opacity-10 text-info border-info border-opacity-25",
     "bg-dark bg-opacity-10 text-dark border-dark border-opacity-25",
-    "bg-indigo bg-opacity-10 text-indigo border-indigo border-opacity-25", // Custom if defined, else fallback to primary
-    "bg-pink bg-opacity-10 text-pink border-pink border-opacity-25",     // Custom if defined
-    "bg-teal bg-opacity-10 text-teal border-teal border-opacity-25"      // Custom if defined
+    "bg-secondary bg-opacity-10 text-secondary border-secondary border-opacity-25",
   ];
   
   let hash = 0;

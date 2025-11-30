@@ -12,7 +12,7 @@
 
     <!-- Summary Cards -->
     <div class="row g-3 mb-4">
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div class="card border-0 shadow-sm h-100 bg-primary text-white">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-start">
@@ -27,7 +27,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div class="card border-0 shadow-sm h-100 bg-success text-white">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-start">
@@ -42,12 +42,27 @@
           </div>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100 bg-warning text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="text-white-50 mb-1">สินค้าที่ขาย (Items Sold)</h6>
+                <h3 class="fw-bold mb-0">{{ totalItemsSold }} <span class="fs-6 fw-normal">ชิ้น</span></h3>
+              </div>
+              <div class="bg-white bg-opacity-25 rounded p-2">
+                <i class="fas fa-box-open fa-lg"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
         <div class="card border-0 shadow-sm h-100 bg-info text-white">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-start">
               <div>
-                <h6 class="text-white-50 mb-1">ยอดเฉลี่ยต่อบิล (Avg. Order Value)</h6>
+                <h6 class="text-white-50 mb-1">ยอดเฉลี่ยต่อบิล (Avg. Order)</h6>
                 <h3 class="fw-bold mb-0">฿{{ avgOrderValue.toLocaleString("th-TH", { minimumFractionDigits: 2 }) }}</h3>
               </div>
               <div class="bg-white bg-opacity-25 rounded p-2">
@@ -103,7 +118,7 @@
           <i class="fas fa-exclamation-triangle me-2"></i>{{ error.message }}
         </div>
         <div v-else class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
+          <table class="table table-hover align-middle mb-0 text-nowrap">
             <thead class="bg-light">
               <tr>
                 <th class="py-3 ps-4 cursor-pointer" @click="sortBy('id')">บิล ID <i class="fas" :class="getSortIcon('id')"></i></th>
@@ -309,6 +324,11 @@ const totalSales = computed(() => {
 
 const totalOrders = computed(() => {
   return sales.value ? sales.value.length : 0;
+});
+
+const totalItemsSold = computed(() => {
+  if (!sales.value) return 0;
+  return sales.value.reduce((sum, sale) => sum + Number(sale.total_items || 0), 0);
 });
 
 const avgOrderValue = computed(() => {

@@ -1,7 +1,10 @@
 <template>
   <div class="stat-card" :class="`stat-card-${variant}`">
     <div class="stat-header">
-      <h3 class="stat-title">{{ title }}</h3>
+      <div class="d-flex align-items-center gap-2">
+        <h3 class="stat-title">{{ title }}</h3>
+        <i v-if="tooltip" class="fas fa-info-circle" :title="tooltip" style="opacity: 0.7; cursor: help; font-size: 0.85em;"></i>
+      </div>
       <i :class="`fas fa-${getFontAwesomeIcon()}`" class="stat-icon"></i>
     </div>
     <div class="stat-value">{{ formattedValue }}</div>
@@ -17,17 +20,21 @@ interface Props {
   value: number | string
   unit?: string
   icon?: string
-  variant?: 'blue' | 'purple' | 'orange' | 'red' | 'green'
+  variant?: 'blue' | 'purple' | 'orange' | 'red' | 'green' | 'teal'
+  tooltip?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   unit: '',
   icon: 'chart-pie',
-  variant: 'blue'
+  variant: 'blue',
+  tooltip: ''
 })
 
 const getFontAwesomeIcon = () => {
   const iconMap: Record<string, string> = {
+    'chart-line': 'chart-line',
+    'wallet': 'wallet',
     'pie-chart': 'chart-pie',
     'money': 'coins',
     'box': 'box',
@@ -124,6 +131,10 @@ const formattedValue = computed(() => {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 }
 
+.stat-card-teal {
+  background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
+}
+
 /* Hover effects for variants */
 .stat-card-blue:hover {
   box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
@@ -143,6 +154,10 @@ const formattedValue = computed(() => {
 
 .stat-card-green:hover {
   box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+}
+
+.stat-card-teal:hover {
+  box-shadow: 0 8px 20px rgba(20, 184, 166, 0.4);
 }
 
 /* Responsive */

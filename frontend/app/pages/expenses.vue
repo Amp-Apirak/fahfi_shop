@@ -61,7 +61,7 @@
     <div class="card border-0 shadow-sm">
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
+          <table class="table table-hover align-middle mb-0 text-nowrap">
             <thead class="bg-light">
               <tr>
                 <th class="py-3 ps-4 cursor-pointer" @click="sortBy('expense_date')">

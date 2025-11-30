@@ -79,11 +79,20 @@
           variant="orange"
         />
         <StatCard
-          title="กำไร/ขาดทุน"
-          :value="summary.profit"
+          title="กำไรขั้นต้น (Gross)"
+          :value="summary.grossProfit"
           unit="บาท"
-          icon="trending-up"
+          icon="chart-line"
+          variant="teal"
+          tooltip="ยอดขาย - ต้นทุนสินค้า"
+        />
+        <StatCard
+          title="กำไรสุทธิ (Net)"
+          :value="summary.netProfit"
+          unit="บาท"
+          icon="wallet"
           variant="green"
+          tooltip="กำไรขั้นต้น - ค่าใช้จ่าย"
         />
         <StatCard
           title="จำนวนออเดอร์"
@@ -93,17 +102,37 @@
           variant="purple"
         />
         <StatCard
+          title="สินค้าที่ขายออก"
+          :value="summary.totalItemsSold"
+          unit="ชิ้น"
+          icon="box-open"
+          variant="orange"
+        />
+        <StatCard
           title="สินค้าในระบบ"
           :value="summary.totalProducts"
           unit="ชิ้น"
           icon="package"
           variant="red"
         />
+        <StatCard
+          v-if="summary.capital"
+          title="ROI (ผลตอบแทน)"
+          :value="formatNumber(summary.capital.roi)"
+          unit="%"
+          icon="percent"
+          variant="teal"
+        />
       </div>
     </div>
 
     <!-- Charts Section -->
     <div v-if="chartData" class="charts-section">
+      <!-- Financial Trend Chart (New) -->
+      <div class="financial-chart-section" v-if="chartData.financialTrend">
+        <FinancialChart :data="chartData.financialTrend" />
+      </div>
+
       <div class="charts-grid">
         <!-- Top 5 Products Chart -->
         <TopProductsChart
@@ -204,12 +233,12 @@ const getDateRange = (tab: string) => {
       end.setHours(23, 59, 59, 999)
       break
     case 'all':
-      return { startDate: null, endDate: null }
+      return { startDate: '', endDate: '' }
     case 'custom':
       if (startDate.value && endDate.value) {
         return { startDate: startDate.value, endDate: endDate.value }
       }
-      return { startDate: null, endDate: null }
+      return { startDate: '', endDate: '' }
   }
 
   return {
@@ -275,7 +304,8 @@ const fetchCharts = async (start?: string | null, end?: string | null) => {
         summary: summaryResponse.data,
         top5Products: [],
         latest10Sales: [],
-        productStock: []
+        productStock: [],
+        financialTrend: null
       }
       console.log('✅ Dashboard summary data (fallback):', summaryResponse.data)
     }
@@ -299,7 +329,7 @@ const formatNumber = (value: any) => {
 // Lifecycle
 onMounted(() => {
   // Set initial date range to today
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date().toISOString().split('T')[0] || ''
   startDate.value = today
   endDate.value = today
   fetchCharts(today, today)
@@ -535,6 +565,11 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
   gap: 30px;
+}
+
+.financial-chart-section {
+  height: 400px;
+  width: 100%;
 }
 
 /* Stat Card Base */

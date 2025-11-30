@@ -11,7 +11,7 @@
       </button>
 
       <!-- Title -->
-      <h1 class="header-title">ภาพรวมร้านค้า (Dashboard)</h1>
+      <h1 class="header-title">{{ pageTitle }}</h1>
 
       <!-- AI Button (Right Side) -->
       <button class="btn-ai">
@@ -23,7 +23,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
+const pageTitle = computed(() => {
+  const path = route.path
+  
+  // Mapping routes to titles
+  if (path === '/' || path === '/index') return 'ภาพรวมร้านค้า (Dashboard)'
+  if (path.startsWith('/pos')) return 'ขายหน้าร้าน (POS)'
+  if (path.startsWith('/products')) return 'จัดการสต็อกสินค้า (Stock Management)'
+  if (path.startsWith('/sales-history')) return 'ประวัติการขาย (Sales History)'
+  if (path.startsWith('/expenses')) return 'บันทึกรายจ่าย (Expenses)'
+  if (path.startsWith('/capital')) return 'เงินลงทุน (Capital)'
+  if (path.startsWith('/login')) return 'เข้าสู่ระบบ (Login)'
+  
+  return 'Fahfi Shop' // Default title
+})
 
 const isCollapsed = ref(false)
 const isDrawerOpen = ref(false)
