@@ -20,7 +20,7 @@ interface Props {
   value: number | string
   unit?: string
   icon?: string
-  variant?: 'blue' | 'purple' | 'orange' | 'red' | 'green' | 'teal'
+  variant?: 'blue' | 'purple' | 'orange' | 'red' | 'green' | 'teal' | 'pink'
   tooltip?: string
 }
 
@@ -42,7 +42,10 @@ const getFontAwesomeIcon = () => {
     'package': 'box-open',
     'trending-up': 'arrow-trend-up',
     'dollar': 'sack-dollar',
-    'users': 'users'
+    'users': 'users',
+    'tags': 'tags',
+    'box-open': 'box-open',
+    'percent': 'percent'
   }
   return iconMap[props.icon || 'chart-pie'] || 'chart-pie'
 }
@@ -135,6 +138,10 @@ const formattedValue = computed(() => {
   background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
 }
 
+.stat-card-pink {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+}
+
 /* Hover effects for variants */
 .stat-card-blue:hover {
   box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
@@ -158,6 +165,10 @@ const formattedValue = computed(() => {
 
 .stat-card-teal:hover {
   box-shadow: 0 8px 20px rgba(20, 184, 166, 0.4);
+}
+
+.stat-card-pink:hover {
+  box-shadow: 0 8px 20px rgba(236, 72, 153, 0.4);
 }
 
 /* Responsive */

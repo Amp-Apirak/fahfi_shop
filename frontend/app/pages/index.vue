@@ -109,6 +109,14 @@
           variant="orange"
         />
         <StatCard
+          title="ส่วนลดรวม"
+          :value="summary.totalDiscount"
+          unit="บาท"
+          icon="tags"
+          variant="pink"
+          tooltip="ยอดส่วนลดท้ายบิลรวมทั้งหมด"
+        />
+        <StatCard
           title="สินค้าในระบบ"
           :value="summary.totalProducts"
           unit="ชิ้น"
