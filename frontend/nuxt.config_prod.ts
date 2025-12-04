@@ -8,7 +8,7 @@ export default defineNuxtConfig({
   ],
 
   app: {
-    // baseURL: '/fahfishop/', // ปิดการใช้งาน baseURL เพื่อให้รันที่ localhost:3000 ได้โดยตรง
+    baseURL: '/fahfishop/', // กำหนด Base URL เป็น /fahfishop/
     head: {
       link: [
         {
@@ -46,13 +46,6 @@ export default defineNuxtConfig({
   vite: {
     define: {
       "process.env.DEBUG": false,
-    },
-  },
-
-  // ตั้งค่า Proxy สำหรับ Dev Mode (เพื่อให้เรียก /api ไปที่ Port 3001 ได้)
-  nitro: {
-    routeRules: {
-      '/api/**': { proxy: 'http://localhost:3001/api/**' },
     },
   },
 });

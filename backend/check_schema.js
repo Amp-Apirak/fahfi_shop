@@ -20,3 +20,4 @@ connection.query("SHOW COLUMNS FROM sales LIKE 'discount'", (err, results) => {
   }
   connection.end();
 });
+

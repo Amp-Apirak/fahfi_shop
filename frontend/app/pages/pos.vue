@@ -210,6 +210,18 @@
                               <i class="fas fa-plus"></i>
                             </button>
                           </div>
+                          
+                          <!-- Discount Button -->
+                          <button 
+                            class="btn btn-sm ms-auto" 
+                            :class="item.discount > 0 ? 'btn-warning' : 'btn-outline-secondary'"
+                            @click="editDiscount(item)"
+                            title="ส่วนลดรายการ"
+                          >
+                            <i class="fas fa-tag me-1"></i>
+                            <span v-if="item.discount > 0">-{{ item.discount.toLocaleString() }}</span>
+                            <span v-else>ส่วนลด</span>
+                          </button>
                         </div>
 
                       <div class="mt-2 pt-2 border-top">
@@ -513,6 +525,84 @@
         </div>
       </div>
     </teleport>
+
+    <!-- Receipt Template (Hidden on Screen, Visible on Print) -->
+    <teleport to="body">
+      <div id="receipt-print-area" v-if="receiptData">
+        <div class="receipt-container">
+          <div class="receipt-header">
+            <h4 class="shop-name">{{ merchantName }}</h4>
+            <p class="receipt-info">
+              วันที่: {{ receiptData.date }}<br>
+              บิลเลขที่: #{{ receiptData.id }}<br>
+              พนักงาน: {{ receiptData.cashier }}
+            </p>
+          </div>
+          
+          <div class="receipt-divider">--------------------------------</div>
+          
+          <table class="receipt-table">
+            <thead>
+              <tr>
+                <th class="text-start">รายการ</th>
+                <th class="text-end">รวม</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(item, index) in receiptData.items" :key="index">
+                <td colspan="2">
+                  <div class="item-row">
+                    <span class="item-name">{{ item.name }}</span>
+                  </div>
+                  <div class="item-details">
+                    {{ item.quantity }} x {{ item.sell_price.toLocaleString() }}
+                    <span class="item-total">{{ ((item.quantity * item.sell_price) - (item.discount || 0)).toLocaleString() }}</span>
+                  </div>
+                  <div v-if="item.discount > 0" class="text-end" style="font-size: 10px;">
+                    (ส่วนลด: -{{ item.discount.toLocaleString() }})
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="receipt-divider">--------------------------------</div>
+
+          <div class="receipt-summary">
+            <div class="summary-row">
+              <span>ยอดรวม:</span>
+              <span>{{ receiptData.subtotal.toLocaleString('th-TH', { minimumFractionDigits: 2 }) }}</span>
+            </div>
+            <div class="summary-row" v-if="receiptData.discount > 0">
+              <span>ส่วนลด:</span>
+              <span>-{{ receiptData.discount.toLocaleString('th-TH', { minimumFractionDigits: 2 }) }}</span>
+            </div>
+            <div class="summary-row total-row">
+              <span>สุทธิ:</span>
+              <span>{{ receiptData.total.toLocaleString('th-TH', { minimumFractionDigits: 2 }) }}</span>
+            </div>
+            <div class="receipt-divider-dotted">................................</div>
+            <div class="summary-row">
+              <span>ชำระโดย:</span>
+              <span>{{ receiptData.paymentMethod === 'qrcode' ? 'QR Code' : 'เงินสด' }}</span>
+            </div>
+            <div class="summary-row">
+              <span>รับเงิน:</span>
+              <span>{{ receiptData.received.toLocaleString('th-TH', { minimumFractionDigits: 2 }) }}</span>
+            </div>
+            <div class="summary-row">
+              <span>เงินทอน:</span>
+              <span>{{ receiptData.change.toLocaleString('th-TH', { minimumFractionDigits: 2 }) }}</span>
+            </div>
+          </div>
+
+          <div class="receipt-footer">
+            <p>ขอบคุณที่ใช้บริการ</p>
+            <p>Thank You</p>
+          </div>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
@@ -594,6 +684,9 @@ const qrCodeData = ref(null); // ข้อมูล QR code สำหรับ�
 const merchantName = ref("Fahfi Shop"); // ชื่อร้านค้า
 const receivedAmount = ref(0); // เงินที่รับมา
 
+// Receipt Data
+const receiptData = ref(null);
+
 // คำนวณเงินทอน
 const changeAmount = computed(() => {
   if (!receivedAmount.value || receivedAmount.value <= 0) return 0;
@@ -647,6 +740,7 @@ onMounted(() => {
 const increaseQuantity = (item) => {
   if (item.quantity < item.stock) {
     item.quantity++;
+    updateQuantity(item); // Recalculate discount
   } else {
     alert(`สต็อกไม่พอ! (มี ${item.stock} ชิ้น)`);
   }
@@ -655,6 +749,7 @@ const increaseQuantity = (item) => {
 const decreaseQuantity = (item) => {
   if (item.quantity > 1) {
     item.quantity--;
+    updateQuantity(item); // Recalculate discount
   }
 };
 
@@ -682,6 +777,9 @@ const addToCart = (product) => {
       sell_price: product.sell_price,
       quantity: 1,
       stock: product.stock_quantity,
+      discount: 0,
+      discountType: 'total', // 'total' or 'unit'
+      discountValue: 0
     });
   }
 };
@@ -707,6 +805,51 @@ const updateQuantity = (item) => {
   if (item.quantity < 1) {
     item.quantity = 1;
   }
+  
+  // Recalculate discount if per unit
+  if (item.discountType === 'unit') {
+    item.discount = item.discountValue * item.quantity;
+  }
+};
+
+// ฟังก์ชันแก้ไขส่วนลดรายการ
+const editDiscount = async (item) => {
+  const { value: formValues } = await Swal.fire({
+    title: 'ส่วนลดรายการสินค้า',
+    html:
+      `<div class="mb-3 text-start">
+        <label class="form-label">ประเภทส่วนลด</label>
+        <select id="swal-discount-type" class="form-select">
+          <option value="total" ${item.discountType === 'total' ? 'selected' : ''}>ยอดรวม (บาท)</option>
+          <option value="unit" ${item.discountType === 'unit' ? 'selected' : ''}>ต่อชิ้น (บาท)</option>
+        </select>
+      </div>
+      <div class="mb-3 text-start">
+        <label class="form-label">มูลค่าส่วนลด</label>
+        <input id="swal-discount-value" type="number" class="form-control" value="${item.discountValue || 0}" min="0">
+      </div>`,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: 'บันทึก',
+    cancelButtonText: 'ยกเลิก',
+    preConfirm: () => {
+      return {
+        type: document.getElementById('swal-discount-type').value,
+        value: Number(document.getElementById('swal-discount-value').value)
+      }
+    }
+  });
+
+  if (formValues) {
+    item.discountType = formValues.type;
+    item.discountValue = formValues.value;
+    
+    if (formValues.type === 'unit') {
+      item.discount = formValues.value * item.quantity;
+    } else {
+      item.discount = formValues.value;
+    }
+  }
 };
 
 // ฟังก์ชันคำนวณส่วนลดท้ายบิล
@@ -726,7 +869,7 @@ const applyGlobalDiscount = (percent) => {
 
 // ฟังก์ชันคำนวณรวมต่อรายการ
 const getLineTotal = (item) => {
-  return item.sell_price * item.quantity;
+  return (item.sell_price * item.quantity) - (item.discount || 0);
 };
 
 // 6. (สำคัญ) การคำนวณยอดรวม (Computed Property)
@@ -766,6 +909,11 @@ const confirmPayment = async () => {
 
   // เก็บยอดรวมไว้ก่อน เพราะจะรีเซ็ต cart ทีหลัง
   const finalAmount = totalAmount.value;
+  const currentCart = [...cart.value]; // Clone cart items
+  const currentDiscount = globalDiscount.value;
+  const currentReceived = receivedAmount.value;
+  const currentChange = changeAmount.value;
+  const currentPaymentMethod = paymentMethod.value;
 
   try {
     // 1. เตรียม "ตะกร้า" (Cart)
@@ -773,6 +921,7 @@ const confirmPayment = async () => {
       cart: cart.value.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity,
+        discount_amount: item.discount || 0
       })),
       totalAmount: finalAmount,
       globalDiscount: globalDiscount.value,
@@ -782,7 +931,7 @@ const confirmPayment = async () => {
     };
 
     // 2. ยิง API
-    await axios.post("/api/sales", saleData, {
+    const response = await axios.post("/api/sales", saleData, {
       headers: { Authorization: `Bearer ${token.value}` },
     });
 
@@ -792,18 +941,44 @@ const confirmPayment = async () => {
     globalDiscount.value = 0; // รีเซ็ตส่วนลด
     saleError.value = null;
     paymentMethod.value = "transfer"; // รีเซ็ตเป็น default
+    receivedAmount.value = 0;
 
-    // แสดง Success message
-    await Swal.fire({
+    // Prepare Receipt Data
+    receiptData.value = {
+      id: response.data.saleId,
+      date: new Date().toLocaleString('th-TH'),
+      cashier: 'Admin', // In real app, get from user state
+      items: currentCart,
+      subtotal: currentCart.reduce((sum, item) => sum + ((item.sell_price * item.quantity) - (item.discount || 0)), 0),
+      discount: currentDiscount,
+      total: finalAmount,
+      received: currentReceived,
+      change: currentChange,
+      paymentMethod: currentPaymentMethod
+    };
+
+    // แสดง Success message พร้อมปุ่มพิมพ์
+    const result = await Swal.fire({
       icon: "success",
       title: "บันทึกการขายสำเร็จ!",
       html: `<p style="font-size: 16px;">ยอดรวม</p><h2 style="color: #10b981; font-weight: bold; font-size: 32px;">฿${finalAmount.toLocaleString(
         "th-TH",
         { minimumFractionDigits: 2, maximumFractionDigits: 2 }
       )}</h2>`,
-      confirmButtonText: "ตกลง",
-      confirmButtonColor: "#10b981",
+      showCancelButton: true,
+      confirmButtonText: '<i class="fas fa-print"></i> พิมพ์ใบเสร็จ',
+      cancelButtonText: 'ปิด',
+      confirmButtonColor: "#3b82f6",
+      cancelButtonColor: "#6c757d",
+      reverseButtons: true
     });
+
+    if (result.isConfirmed) {
+      // Trigger Print
+      setTimeout(() => {
+        window.print();
+      }, 500);
+    }
 
     await fetchProducts();
     await fetchRecentSales(); // อัปเดตประวัติการขายทันที
@@ -1401,18 +1576,7 @@ const formatImageUrl = (url) => {
   }
 }
 
-/* Print Styles (สำหรับการพิมพ์) */
-@media print {
-  .action-btn,
-  .btn,
-  .card-header {
-    display: none;
-  }
 
-  .table {
-    font-size: 11pt;
-  }
-}
 
 /* Animation for loading state */
 @keyframes spin {
@@ -1446,5 +1610,139 @@ const formatImageUrl = (url) => {
 
 .table-responsive::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+</style>
+
+<!-- Global Print Styles -->
+<style>
+/* Print Styles (สำหรับการพิมพ์) */
+@media print {
+  /* Hide everything by default */
+  body > * {
+    display: none !important;
+  }
+
+  /* Show only the receipt area */
+  #receipt-print-area {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white;
+    z-index: 9999;
+  }
+
+  /* Reset body margins */
+  body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+/* Receipt Styling (Visible only in print or preview) */
+#receipt-print-area {
+  display: none; /* Hidden on screen */
+  width: 58mm; /* Standard thermal paper width */
+  font-family: 'Courier New', Courier, monospace; /* Monospace for alignment */
+  font-size: 12px;
+  line-height: 1.4;
+  color: black;
+  padding: 10px;
+  background: white;
+}
+
+.receipt-container {
+  width: 100%;
+}
+
+.receipt-header {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.shop-name {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 0 0 5px 0;
+}
+
+.receipt-info {
+  font-size: 10px;
+  margin: 0;
+}
+
+.receipt-divider {
+  text-align: center;
+  margin: 5px 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.receipt-divider-dotted {
+  text-align: center;
+  margin: 5px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border-bottom: 1px dotted black;
+  height: 1px;
+}
+
+.receipt-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 5px;
+}
+
+.receipt-table th {
+  font-size: 10px;
+  border-bottom: 1px solid black;
+  padding-bottom: 2px;
+}
+
+.item-row {
+  margin-top: 4px;
+}
+
+.item-name {
+  font-weight: bold;
+  display: block;
+}
+
+.item-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding-left: 10px;
+}
+
+.receipt-summary {
+  margin-top: 5px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.total-row {
+  font-weight: bold;
+  font-size: 14px;
+  margin-top: 5px;
+  border-top: 1px solid black;
+  border-bottom: 1px solid black;
+  padding: 5px 0;
+}
+
+.receipt-footer {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 10px;
 }
 </style>

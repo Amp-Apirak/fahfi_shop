@@ -23,3 +23,4 @@ connection.query(alterQuery, (err, results) => {
   }
   connection.end();
 });
+
