@@ -79,22 +79,6 @@
           variant="orange"
         />
         <StatCard
-          title="กำไรขั้นต้น (Gross)"
-          :value="summary.grossProfit"
-          unit="บาท"
-          icon="chart-line"
-          variant="teal"
-          tooltip="ยอดขาย - ต้นทุนสินค้า"
-        />
-        <StatCard
-          title="กำไรสุทธิ (Net)"
-          :value="summary.netProfit"
-          unit="บาท"
-          icon="wallet"
-          variant="green"
-          tooltip="กำไรขั้นต้น - ค่าใช้จ่าย"
-        />
-        <StatCard
           title="จำนวนออเดอร์"
           :value="summary.totalOrders"
           unit="ใบ"

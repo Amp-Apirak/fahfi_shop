@@ -26,6 +26,7 @@
               <option value="ค่าน้ำ/ค่าไฟ">ค่าน้ำ/ค่าไฟ</option>
               <option value="เงินเดือน">เงินเดือน</option>
               <option value="ค่าเช่า">ค่าเช่า</option>
+              <option value="ค่าเช่า">เบิกออก</option>
               <option value="อื่นๆ">อื่นๆ</option>
             </select>
           </div>
